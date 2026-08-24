@@ -102,8 +102,10 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 .btn-secondary:hover { background:var(--surface-2); }
 
 /* MARKET PANEL */
-.market-panel { max-width:980px; margin:16px auto 0; display:none; }
-.market-panel.open { display:block; }
+  .market-panel { max-width:980px; margin:16px auto 0; display:none; }
+  .market-panel.open { display:block; }
+  .backup-card { max-width:980px; margin:24px auto 40px; }
+  .backup-note { font-size:12px; color:var(--text-hint); margin:0 0 12px; }
 .market-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); }
 .market-title { font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text); display:flex; justify-content:space-between; }
 .close-btn { background:none; border:none; cursor:pointer; color:var(--text-hint); font-size:18px; }
@@ -194,6 +196,15 @@ button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--ac
 </div>
 
 <div id="sections"></div>
+
+<div class="card backup-card">
+  <div class="card-title">💾 Respaldo de datos</div>
+  <p class="backup-note">El historial vive en este navegador. Exportá un respaldo para protegerlo o pasarlo a otro dispositivo.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn btn-secondary" data-act="export-data">⬇️ Exportar respaldo</button>
+    <label class="btn btn-secondary" style="cursor:pointer;margin:0">⬆️ Importar respaldo<input type="file" id="import-file" accept=".json,application/json" hidden></label>
+  </div>
+</div>
 
 <div id="toast" role="status" aria-live="polite"></div>
 
@@ -919,6 +930,46 @@ function switchTab(ns, cat) {
 
 function toggleMarket() { document.getElementById('market-panel').classList.toggle('open'); }
 
+// ── RESPALDO (exportar / importar) ───────────────────────
+function exportData() {
+  const data = { app: 'ntec-presupuestos', version: 1, fecha: new Date().toISOString(), historial: {}, tarifas: {} };
+  NSS.forEach(ns => {
+    data.historial[ns] = lsGet('ntec_' + ns + '_h', []);
+    const t = localStorage.getItem('ntec_t2_' + ns);
+    if (t) { try { data.tarifas[ns] = JSON.parse(t); } catch(e){} }
+  });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ntec_respaldo_' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('✓ Respaldo exportado');
+}
+
+function importData(file) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d || d.app !== 'ntec-presupuestos' || typeof d.historial !== 'object') throw new Error('formato');
+      NSS.forEach(ns => {
+        if (Array.isArray(d.historial[ns])) lsSet('ntec_' + ns + '_h', d.historial[ns]);
+        if (d.tarifas && d.tarifas[ns]) lsSet('ntec_t2_' + ns, d.tarifas[ns]);
+        renderHistory(ns);
+      });
+      renderTarifas('cel', activeCat.cel);
+      renderTarifas('pc', activeCat.pc);
+      toast('✓ Respaldo importado');
+    } catch (err) {
+      toast('Archivo inválido — usá un respaldo exportado desde esta app.', true);
+    }
+  };
+  r.readAsText(file);
+}
+
 // ── EVENTOS (delegación global) ──────────────────────────
 const ACTIONS = {
   'toggle-market': () => toggleMarket(),
@@ -933,6 +984,7 @@ const ACTIONS = {
   'reset-tarifas': ns => resetTarifas(ns),
   'edit-tarifa': (ns, el) => startEdit(el.dataset.id),
   'usar-tarifa': (ns, el) => usarTarifa(ns, el.dataset.cat, el.dataset.id),
+  'export-data': () => exportData(),
 };
 
 document.addEventListener('click', e => {
@@ -954,6 +1006,11 @@ function onFieldInput(e) {
 }
 document.addEventListener('input', onFieldInput);
 document.addEventListener('change', onFieldInput);
+
+document.getElementById('import-file').addEventListener('change', e => {
+  if (e.target.files[0]) importData(e.target.files[0]);
+  e.target.value = '';
+});
 
 document.addEventListener('focusout', e => {
   if (e.target.classList && e.target.classList.contains('p-inp-edit'))
