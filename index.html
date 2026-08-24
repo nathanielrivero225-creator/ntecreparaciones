@@ -177,7 +177,10 @@ button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--ac
     <div class="logo">Ntec<span>.</span> Presupuestos</div>
     <div class="tagline">Calculadora de reparaciones</div>
   </div>
-  <button type="button" class="market-pill" data-act="toggle-market">📊 Precios del mercado UY</button>
+  <div style="display:flex;gap:8px">
+    <button type="button" class="market-pill" data-act="toggle-market">📊 Precios del mercado UY</button>
+    <a class="market-pill" href="dashboard.html" style="text-decoration:none;display:inline-block">📈 Dashboard</a>
+  </div>
 </div>
 
 <div class="market-panel" id="market-panel">
