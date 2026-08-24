@@ -16,3 +16,34 @@ function toast(msg, isErr) {
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
+
+function rangoDia(y, m, d) {
+  const pad = n => String(n).padStart(2, '0');
+  const ini = new Date(y, m, d);
+  const fin = new Date(y, m, d + 1);
+  return {
+    desde: ini.getFullYear() + '-' + pad(ini.getMonth() + 1) + '-' + pad(ini.getDate()) + 'T00:00:00',
+    hasta: fin.getFullYear() + '-' + pad(fin.getMonth() + 1) + '-' + pad(fin.getDate()) + 'T00:00:00',
+  };
+}
+
+async function supaEliminar(opts) {
+  let url = SUPA_URL + '/rest/v1/presupuestos?';
+  if (opts.id != null) {
+    url += 'id=eq.' + encodeURIComponent(opts.id);
+  } else if (opts.fp) {
+    const f = opts.fp;
+    url += 'ns=eq.' + encodeURIComponent(opts.ns)
+      + '&equipo=eq.' + encodeURIComponent(f.equipo || '')
+      + '&cliente=' + (f.cliente ? 'eq.' + encodeURIComponent(f.cliente) : 'is.null')
+      + '&total=eq.' + Math.round(num(f.total))
+      + '&creado_en=gte.' + encodeURIComponent(f.desde)
+      + '&creado_en=lt.' + encodeURIComponent(f.hasta);
+  } else return false;
+  try {
+    const r = await fetch(url, { method: 'DELETE', headers: { 'apikey': SUPA_KEY } });
+    return r.ok;
+  } catch (e) {
+    return false;
+  }
+}

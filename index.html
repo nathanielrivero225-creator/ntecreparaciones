@@ -368,6 +368,7 @@ function saveTarifas(ns, data) { lsSet('ntec_t2_' + ns, data); }
 
 // ── ESTADO ───────────────────────────────────────────────
 let uid = 1;
+let editing = null;
 const srvs = { cel: [], pc: [] };
 const activeCat = { cel: 'samsung', pc: 'hw' };
 const detalleCache = {};
@@ -663,22 +664,90 @@ function guardar(ns) {
   };
   const key = 'ntec_' + ns + '_h';
   const h = lsGet(key, []);
-  h.unshift(entry);
-  if (h.length > 30) h.length = 30;
-  if (lsSet(key, h)) {
-    renderHistory(ns);
-    toast('✓ Presupuesto guardado en el historial');
-    cloudGuardar(ns, entry);
+  const editandoEste = !!(editing && editing.ns === ns);
+  let fpPrevio = null;
+  if (editandoEste) {
+    const i = h.findIndex(x => x.id === editing.id);
+    entry.id = editing.id;
+    if (i >= 0) {
+      entry.cloud_id = h[i].cloud_id ?? null;
+      fpPrevio = { equipo: h[i].equipo, cliente: h[i].cliente || '', total: h[i].total, fecha: h[i].fecha };
+      h[i] = entry;
+    } else {
+      entry.cloud_id = editing.cloudId ?? null;
+      h.unshift(entry);
+    }
+  } else {
+    h.unshift(entry);
   }
+  if (h.length > 30) h.length = 30;
+  if (!lsSet(key, h)) return;
+  renderHistory(ns);
+  terminarEdicion(ns);
+  toast(editandoEste ? '✓ Presupuesto actualizado' : '✓ Presupuesto guardado en el historial');
+  sincronizarCloud(ns, entry, editandoEste, fpPrevio);
+}
+
+async function sincronizarCloud(ns, entry, eraEdicion, fpPrevio) {
+  const key = 'ntec_' + ns + '_h';
+  if (eraEdicion && entry.cloud_id != null) {
+    const ok = await cloudActualizar(ns, entry);
+    if (!ok) toast('Actualizado local — la nube no respondió', true);
+    return;
+  }
+  if (eraEdicion && fpPrevio) {
+    const p = String(fpPrevio.fecha || '').split('/').map(Number);
+    if (p.length === 3 && p[0] && p[2]) {
+      const rg = rangoDia(p[2], p[1] - 1, p[0]);
+      await supaEliminar({ ns, fp: { equipo: fpPrevio.equipo, cliente: fpPrevio.cliente, total: fpPrevio.total, desde: rg.desde, hasta: rg.hasta } });
+    }
+  }
+  const cid = await cloudGuardar(ns, entry);
+  if (cid == null) {
+    if (!eraEdicion) toast('Guardado local — la nube no respondió', true);
+    return;
+  }
+  entry.cloud_id = cid;
+  const h = lsGet(key, []);
+  const it = h.find(x => x.id === entry.id);
+  if (it) { it.cloud_id = cid; lsSet(key, h); }
+}
+
+function setBotonGuardar(ns, texto) {
+  const b = document.querySelector(`button[data-act="save"][data-ns="${ns}"]`);
+  if (b) b.textContent = texto;
+}
+
+function iniciarEdicion(ns, entry) {
+  document.getElementById(ns + '-equipo').value   = entry.equipo || '';
+  document.getElementById(ns + '-cliente').value  = entry.cliente || '';
+  document.getElementById(ns + '-otros').value    = entry.otros || '';
+  document.getElementById(ns + '-garantia').value = entry.garantia || '';
+  document.getElementById(ns + '-notas').value    = entry.notas || '';
+  srvs[ns] = (entry.servicios || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
+  renderSrvs(ns);
+  calcular(ns);
+  saveDraft(ns);
+  editing = { ns, id: entry.id != null ? entry.id : Date.now(), cloudId: entry.cloud_id != null ? entry.cloud_id : null };
+  setBotonGuardar(ns, '💾 Guardar cambios');
+}
+
+function terminarEdicion(ns) {
+  if (!editing || editing.ns !== ns) return;
+  editing = null;
+  setBotonGuardar(ns, '💾 Guardar presupuesto');
 }
 
 function limpiar(ns) {
+  const estabaEditando = !!(editing && editing.ns === ns);
+  terminarEdicion(ns);
   srvs[ns] = [];
   renderSrvs(ns);
   ['equipo','cliente','otros','notas'].forEach(f => { const el = document.getElementById(ns+'-'+f); if(el) el.value=''; });
   document.getElementById(ns + '-garantia').value = '';
   clearDraft(ns);
   calcular(ns);
+  if (estabaEditando) toast('Edición cancelada');
 }
 
 // ── HISTORIAL ────────────────────────────────────────────
@@ -697,15 +766,8 @@ function renderHistory(ns) {
 function cargarEntrada(ns, id) {
   const e = lsGet('ntec_' + ns + '_h', []).find(x => x.id === id);
   if (!e) return;
-  document.getElementById(ns + '-equipo').value   = e.equipo || '';
-  document.getElementById(ns + '-cliente').value  = e.cliente || '';
-  document.getElementById(ns + '-otros').value    = e.otros || '';
-  document.getElementById(ns + '-garantia').value = e.garantia || '';
-  document.getElementById(ns + '-notas').value    = e.notas || '';
-  srvs[ns] = (e.servicios || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
-  renderSrvs(ns);
-  calcular(ns);
-  saveDraft(ns);
+  iniciarEdicion(ns, e);
+  toast('Editando entrada del historial — guardá para sobrescribirla');
   document.getElementById(ns + '-equipo').scrollIntoView({ behavior:'smooth', block:'center' });
 }
 
@@ -978,7 +1040,7 @@ async function cloudGuardar(ns, entry) {
   try {
     const r = await fetch(SUPA_URL + '/rest/v1/presupuestos', {
       method: 'POST',
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
       body: JSON.stringify({
         ns,
         equipo: entry.equipo,
@@ -991,8 +1053,34 @@ async function cloudGuardar(ns, entry) {
       }),
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    const row = await r.json();
+    return Array.isArray(row) && row[0] ? row[0].id : null;
   } catch (e) {
     console.warn('Sincronización en la nube falló (queda guardado local):', e);
+    return null;
+  }
+}
+
+async function cloudActualizar(ns, entry) {
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?id=eq.' + encodeURIComponent(entry.cloud_id), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        ns,
+        equipo: entry.equipo,
+        cliente: entry.cliente || null,
+        servicios: entry.servicios || [],
+        otros: num(entry.otros),
+        garantia: entry.garantia || null,
+        notas: entry.notas || null,
+        total: Math.round(num(entry.total)),
+      }),
+    });
+    return r.ok;
+  } catch (e) {
+    console.warn('Actualización en la nube falló:', e);
+    return false;
   }
 }
 
@@ -1015,6 +1103,7 @@ async function cloudCargar() {
         nuevos++;
         h.push({
           id: Date.now() + nuevos,
+          cloud_id: row.id != null ? row.id : null,
           fecha,
           equipo: row.equipo,
           cliente: row.cliente || '',
@@ -1102,9 +1191,19 @@ NSS.forEach(ns => {
   restored = loadDraft(ns) || restored;
 });
 if (restored) toast('Borrador restaurado de la última sesión');
+iniciarEdicionExterna();
 renderTarifas('cel', 'samsung');
 renderTarifas('pc', 'hw');
 cloudCargar();
+
+function iniciarEdicionExterna() {
+  let req = null;
+  try { req = JSON.parse(sessionStorage.getItem('ntec_edit') || 'null'); } catch (e) {}
+  if (!req || !req.entry || NSS.indexOf(req.ns) < 0) return;
+  try { sessionStorage.removeItem('ntec_edit'); } catch (e) {}
+  iniciarEdicion(req.ns, req.entry);
+  toast('Editando presupuesto del dashboard — guardá para aplicar los cambios');
+}
 </script>
 </body>
 </html>

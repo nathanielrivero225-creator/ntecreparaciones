@@ -48,6 +48,10 @@ tr:last-child td { border-bottom:none; }
 .b-cel { background:var(--accent-bg); color:var(--accent-text); }
 .b-pc { background:#eeedfe; color:#3c3489; }
 .vacio { text-align:center; color:var(--text-hint); font-size:13px; padding:24px 0; }
+.acciones { white-space:nowrap; text-align:right; }
+.btn-row { background:none; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:13px; padding:3px 8px; margin-left:4px; color:var(--text-muted); font-family:inherit; }
+.btn-row:hover { background:var(--surface-2); }
+.btn-row.peligro:hover { background:#fde8e8; border-color:#f0b9b3; color:var(--danger); }
 </style>
 </head>
 <body>
@@ -87,7 +91,7 @@ tr:last-child td { border-bottom:none; }
   <div class="card-title">🧾 Últimos presupuestos</div>
   <div style="overflow-x:auto">
     <table>
-      <thead><tr><th>Fecha</th><th>Tipo</th><th>Equipo / Cliente</th><th class="t-num">Materiales</th><th class="t-num">Ganancia</th><th class="t-num">Total</th></tr></thead>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Equipo / Cliente</th><th class="t-num">Materiales</th><th class="t-num">Ganancia</th><th class="t-num">Total</th><th class="acciones">Acciones</th></tr></thead>
       <tbody id="tabla"></tbody>
     </table>
   </div>
@@ -102,6 +106,13 @@ const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov'
 
 let DATOS = [];
 let filtroActual = 'mes';
+let fuenteNube = false;
+
+function actualizarEstado() {
+  document.getElementById('estado-datos').textContent = DATOS.length + ' presupuesto(s) · ' + (fuenteNube ? 'nube ✓' : 'solo local ⚠');
+}
+
+function huella(d) { return d.equipo + '|' + (d.cliente || '') + '|' + Math.round(num(d.total)) + '|' + diaTxt(d.ts); }
 
 async function cargarDatos() {
   const datos = [];
@@ -113,20 +124,22 @@ async function cargarDatos() {
       (await r.json()).forEach(x => {
         const ts = new Date(x.creado_en);
         if (isNaN(ts)) return;
-        datos.push({ ts, ns: x.ns === 'pc' ? 'pc' : 'cel', equipo: x.equipo || '', cliente: x.cliente || '', servicios: Array.isArray(x.servicios) ? x.servicios : [], otros: num(x.otros), total: num(x.total), fp: null });
+        datos.push({ rid: x.id != null ? x.id : null, lid: null, ts, ns: x.ns === 'pc' ? 'pc' : 'cel', equipo: x.equipo || '', cliente: x.cliente || '', servicios: Array.isArray(x.servicios) ? x.servicios : [], otros: num(x.otros), total: num(x.total), garantia: x.garantia || '', notas: x.notas || '' });
       });
     }
   } catch (e) { console.warn('nube caída, uso solo local', e); }
-  const huellas = new Set(datos.map(d => d.equipo + '|' + d.cliente + '|' + Math.round(d.total) + '|' + diaTxt(d.ts)));
+  const porHuella = new Map(datos.map(d => [huella(d), d]));
   ['cel', 'pc'].forEach(ns => {
     try {
       (JSON.parse(localStorage.getItem('ntec_' + ns + '_h') || '[]')).forEach(e => {
         const p = String(e.fecha || '').split('/').map(Number);
         const ts = p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(e.fecha);
         if (isNaN(ts)) return;
-        const fp = e.equipo + '|' + (e.cliente || '') + '|' + Math.round(num(e.total)) + '|' + diaTxt(ts);
-        if (huellas.has(fp)) return;
-        datos.push({ ts, ns, equipo: e.equipo || '', cliente: e.cliente || '', servicios: Array.isArray(e.servicios) ? e.servicios : [], otros: num(e.otros), total: num(e.total) });
+        const d = { rid: e.cloud_id != null ? e.cloud_id : null, lid: e.id, ts, ns, equipo: e.equipo || '', cliente: e.cliente || '', servicios: Array.isArray(e.servicios) ? e.servicios : [], otros: num(e.otros), total: num(e.total), garantia: e.garantia || '', notas: e.notas || '' };
+        const existente = porHuella.get(huella(d));
+        if (existente) { existente.lid = e.id; return; }
+        porHuella.set(huella(d), d);
+        datos.push(d);
       });
     } catch (err) {}
   });
@@ -229,10 +242,12 @@ function renderDesglose(ing, mat, mano, otros, gan) {
     : '<div class="vacio">Sin datos en este período</div>';
 }
 
+let ULTIMOS = [];
+
 function renderTabla(fil) {
-  const rows = fil.slice(0, 12);
-  if (!rows.length) { document.getElementById('tabla').innerHTML = '<tr><td colspan="6" class="vacio">Todavía no hay presupuestos en este período</td></tr>'; return; }
-  document.getElementById('tabla').innerHTML = rows.map(e => {
+  ULTIMOS = fil.slice(0, 12);
+  if (!ULTIMOS.length) { document.getElementById('tabla').innerHTML = '<tr><td colspan="7" class="vacio">Todavía no hay presupuestos en este período</td></tr>'; return; }
+  document.getElementById('tabla').innerHTML = ULTIMOS.map((e, i) => {
     const d = desglosar(e);
     const margen = d.ingreso > 0 ? Math.round(d.ganancia / d.ingreso * 100) : 0;
     return '<tr>' +
@@ -242,9 +257,67 @@ function renderTabla(fil) {
       '<td class="t-num">' + esc(fmt(d.materiales)) + '</td>' +
       '<td class="t-num" style="color:var(--success)">' + esc(fmt(d.ganancia)) + ' <span style="font-size:11px;color:var(--text-hint)">(' + margen + '%)</span></td>' +
       '<td class="t-num"><strong>' + esc(fmt(d.ingreso)) + '</strong></td>' +
+      '<td class="acciones">' +
+        '<button type="button" class="btn-row" data-act="editar" data-i="' + i + '" title="Editar presupuesto">✏️</button>' +
+        '<button type="button" class="btn-row peligro" data-act="eliminar" data-i="' + i + '" title="Eliminar de la nube y local">🗑</button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 }
+
+function editarPresupuesto(d) {
+  let entry = null;
+  try {
+    if (d.lid != null) entry = JSON.parse(localStorage.getItem('ntec_' + d.ns + '_h') || '[]').find(x => x.id === d.lid) || null;
+  } catch (err) {}
+  if (!entry) {
+    entry = { id: null, fecha: diaTxt(d.ts), equipo: d.equipo, cliente: d.cliente, servicios: d.servicios, otros: num(d.otros), garantia: d.garantia || '', notas: d.notas || '', total: Math.round(num(d.total)), cloud_id: d.rid != null ? d.rid : null };
+  }
+  try { sessionStorage.setItem('ntec_edit', JSON.stringify({ ns: d.ns, entry })); } catch (err) {}
+  location.href = 'index.html';
+}
+
+async function eliminarPresupuesto(d) {
+  if (!confirm('¿Eliminar el presupuesto de "' + (d.equipo || 'equipo') + '"?\nTambién se borra de la base de datos.')) return;
+  let okNube;
+  if (d.rid != null) {
+    okNube = await supaEliminar({ id: d.rid });
+  } else {
+    const rg = rangoDia(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
+    okNube = await supaEliminar({ ns: d.ns, fp: { equipo: d.equipo, cliente: d.cliente, total: d.total, desde: rg.desde, hasta: rg.hasta } });
+  }
+  quitarCopiasLocales(d);
+  DATOS = DATOS.filter(x => x !== d);
+  actualizarEstado();
+  render();
+  if (okNube) toast('🗑 Presupuesto eliminado');
+  else toast('Eliminado local — la nube no respondió', true);
+}
+
+function quitarCopiasLocales(d) {
+  try {
+    const key = 'ntec_' + d.ns + '_h';
+    const h = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!Array.isArray(h)) return;
+    const filtrado = h.filter(e => {
+      if (d.lid != null && e.id === d.lid) return false;
+      const p = String(e.fecha || '').split('/').map(Number);
+      const ts = p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(e.fecha);
+      if (isNaN(ts)) return true;
+      return huella({ ts, equipo: e.equipo || '', cliente: e.cliente || '', total: e.total }) !== huella(d);
+    });
+    if (filtrado.length !== h.length) localStorage.setItem(key, JSON.stringify(filtrado));
+  } catch (err) {}
+}
+
+document.getElementById('tabla').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const d = ULTIMOS[+btn.dataset.i];
+  if (!d) return;
+  if (btn.dataset.act === 'editar') editarPresupuesto(d);
+  else if (btn.dataset.act === 'eliminar') eliminarPresupuesto(d);
+});
 
 document.querySelectorAll('[data-filtro]').forEach(b => b.addEventListener('click', () => {
   filtroActual = b.dataset.filtro;
@@ -254,11 +327,12 @@ document.querySelectorAll('[data-filtro]').forEach(b => b.addEventListener('clic
 
 (async () => {
   try {
-    const { datos, fuenteNube } = await cargarDatos();
-    DATOS = datos;
-    document.getElementById('estado-datos').textContent = datos.length + ' presupuesto(s) · ' + (fuenteNube ? 'nube ✓' : 'solo local ⚠');
+    const r = await cargarDatos();
+    DATOS = r.datos;
+    fuenteNube = r.fuenteNube;
+    actualizarEstado();
     render();
-    if (!datos.length) toast('Guardá tu primer presupuesto en la calculadora para verlo acá');
+    if (!DATOS.length) toast('Guardá tu primer presupuesto en la calculadora para verlo acá');
   } catch (e) {
     console.error(e);
     toast('No se pudieron cargar los datos', true);
