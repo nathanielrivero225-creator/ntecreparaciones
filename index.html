@@ -681,6 +681,7 @@ function guardar(ns) {
   if (lsSet(key, h)) {
     renderHistory(ns);
     toast('✓ Presupuesto guardado en el historial');
+    cloudGuardar(ns, entry);
   }
 }
 
@@ -970,6 +971,71 @@ function importData(file) {
   r.readAsText(file);
 }
 
+// ── SINCRONIZACIÓN EN LA NUBE (Supabase) ─────────────────
+const SUPA_URL = 'https://vkfgweehpvyotqeplsie.supabase.co';
+const SUPA_KEY = 'sb_publishable_pprhcX5Pl9fWQkNIOaSDzQ_Ql7ySzzv';
+
+async function cloudGuardar(ns, entry) {
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos', {
+      method: 'POST',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        ns,
+        equipo: entry.equipo,
+        cliente: entry.cliente || null,
+        servicios: entry.servicios || [],
+        otros: num(entry.otros),
+        garantia: entry.garantia || null,
+        notas: entry.notas || null,
+        total: Math.round(num(entry.total)),
+      }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+  } catch (e) {
+    console.warn('Sincronización en la nube falló (queda guardado local):', e);
+  }
+}
+
+async function cloudCargar() {
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?select=*&order=creado_en.desc&limit=200', {
+      headers: { 'apikey': SUPA_KEY },
+    });
+    if (!r.ok) return;
+    const rows = await r.json();
+    let nuevos = 0;
+    NSS.forEach(ns => {
+      const h = lsGet('ntec_' + ns + '_h', []);
+      const huellas = new Set(h.map(e => e.equipo + '|' + (e.cliente || '') + '|' + e.total + '|' + e.fecha));
+      rows.filter(x => x.ns === ns).forEach(row => {
+        const fecha = new Date(row.creado_en).toLocaleDateString('es-UY');
+        const fp = row.equipo + '|' + (row.cliente || '') + '|' + Math.round(row.total) + '|' + fecha;
+        if (huellas.has(fp)) return;
+        huellas.add(fp);
+        nuevos++;
+        h.push({
+          id: Date.now() + nuevos,
+          fecha,
+          equipo: row.equipo,
+          cliente: row.cliente || '',
+          servicios: Array.isArray(row.servicios) ? row.servicios : [],
+          otros: num(row.otros),
+          garantia: row.garantia || '',
+          notas: row.notas || '',
+          total: Math.round(num(row.total)),
+        });
+      });
+      h.sort((a, b) => b.id - a.id);
+      if (nuevos) lsSet('ntec_' + ns + '_h', h.slice(0, 30));
+      renderHistory(ns);
+    });
+    if (nuevos) toast('☁️ ' + nuevos + ' presupuesto(s) recuperados de la nube');
+  } catch (e) {
+    console.warn('Carga desde la nube falló:', e);
+  }
+}
+
 // ── EVENTOS (delegación global) ──────────────────────────
 const ACTIONS = {
   'toggle-market': () => toggleMarket(),
@@ -1040,6 +1106,7 @@ NSS.forEach(ns => {
 if (restored) toast('Borrador restaurado de la última sesión');
 renderTarifas('cel', 'samsung');
 renderTarifas('pc', 'hw');
+cloudCargar();
 </script>
 </body>
 </html>
