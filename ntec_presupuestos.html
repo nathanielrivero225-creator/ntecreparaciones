@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Calculadora de presupuestos para reparación de celulares y PC/Laptops — Ntec Reparaciones, Uruguay.">
+<title>Ntec — Calculadora de Presupuestos</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='13' font-size='13'>🔧</text></svg>">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#f5f4f0; --surface:#fff; --surface-2:#f9f8f5;
+  --border:#e2e0d8; --border-strong:#c8c5bb;
+  --text:#1a1a18; --text-muted:#6b6a65; --text-hint:#9e9c96;
+  --accent:#1a6fd4; --accent-bg:#e8f1fc; --accent-text:#1050a0;
+  --success:#1a7a4a; --success-bg:#e6f5ed;
+  --warning:#8a5c00; --warning-bg:#fef3d8;
+  --danger:#c0392b; --radius:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+}
+body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px 16px; font-size:14px; line-height:1.5; }
+
+.app-header { max-width:980px; margin:0 auto 20px; display:flex; align-items:center; justify-content:space-between; }
+.logo { font-size:20px; font-weight:700; letter-spacing:-.5px; }
+.logo span { color:var(--accent); }
+.tagline { font-size:12px; color:var(--text-hint); margin-top:2px; }
+.market-pill { font-size:12px; padding:4px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text); border:1px solid #b8d0f0; cursor:pointer; font-family:inherit; }
+.market-pill:hover { background:#d5e6f8; }
+
+.layout { max-width:980px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:680px){ .layout { grid-template-columns:1fr; } }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); }
+.card-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-hint); margin-bottom:16px; display:flex; align-items:center; gap:6px; }
+.card-title svg { width:14px; height:14px; stroke:var(--text-hint); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+.section-divider { max-width:980px; margin:32px auto 16px; display:flex; align-items:center; gap:12px; }
+.section-divider .line { flex:1; border-top:1px solid var(--border); }
+.section-divider .lbl { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-hint); white-space:nowrap; display:flex; align-items:center; gap:6px; }
+
+label { display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px; font-weight:500; }
+input[type=text],input[type=number],select,textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; color:var(--text); background:var(--surface-2); outline:none; transition:border-color .15s,box-shadow .15s; font-family:inherit; }
+input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,111,212,.12); background:#fff; }
+.field { margin-bottom:12px; }
+.pfx { position:relative; }
+.pfx span { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-hint); font-size:13px; pointer-events:none; }
+.pfx input { padding-left:26px; }
+.sfx { position:relative; }
+.sfx span { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--text-hint); font-size:13px; pointer-events:none; }
+.sfx input { padding-right:28px; }
+.divider { border:none; border-top:1px solid var(--border); margin:14px 0; }
+
+/* ADD SERVICIO */
+.add-row { display:flex; gap:6px; margin-bottom:10px; align-items:flex-end; }
+.add-row select { flex:1; }
+.btn-add { font-size:12px; padding:8px 12px; border-radius:6px; background:var(--accent); color:#fff; border:none; cursor:pointer; font-family:inherit; white-space:nowrap; height:38px; }
+.btn-add:hover { background:#1558b0; }
+
+/* SERVICIO CARD */
+.servicios-lista { display:flex; flex-direction:column; gap:8px; margin-bottom:4px; }
+.srv-card { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; position:relative; }
+.srv-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.srv-name { font-size:13px; font-weight:600; color:var(--text); }
+.srv-total-badge { font-size:12px; font-weight:700; color:var(--accent); background:var(--accent-bg); padding:2px 8px; border-radius:10px; }
+.srv-fields { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.srv-field label { font-size:11px; color:var(--text-hint); margin-bottom:3px; }
+.srv-field input { font-size:13px; padding:6px 8px; }
+.srv-field .pfx input { padding-left:22px; }
+.srv-field .pfx span { font-size:12px; left:8px; }
+.srv-field .sfx input { padding-right:24px; }
+.srv-field .sfx span { font-size:12px; right:8px; }
+.btn-quitar { background:none; border:none; cursor:pointer; color:var(--text-hint); font-size:16px; line-height:1; padding:0; transition:color .1s; }
+.btn-quitar:hover { color:var(--danger); }
+.empty-srv { font-size:13px; color:var(--text-hint); text-align:center; padding:16px 0; border:1px dashed var(--border); border-radius:var(--radius); background:var(--surface-2); }
+
+/* RESULTADO */
+.metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.metric { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; }
+.metric .m-label { font-size:11px; color:var(--text-hint); margin-bottom:4px; }
+.metric .m-value { font-size:22px; font-weight:700; line-height:1.1; }
+.m-value.accent { color:var(--accent); }
+.m-value.success { color:var(--success); }
+.result-row { display:flex; justify-content:space-between; align-items:baseline; padding:5px 0; font-size:13px; }
+.result-row .rl { color:var(--text-muted); }
+.result-row .rv { font-weight:600; color:var(--text); }
+.result-total { display:flex; justify-content:space-between; align-items:center; padding:10px 0 4px; font-size:15px; font-weight:700; }
+.badge { display:inline-block; font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; margin-left:6px; }
+.badge-ok { background:var(--success-bg); color:var(--success); }
+.badge-warn { background:var(--warning-bg); color:var(--warning); }
+.badge-low { background:#fde8e8; color:var(--danger); }
+.srv-result-block { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:8px 12px; margin-bottom:6px; }
+.srv-result-block .srv-r-name { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.srv-result-row { display:flex; justify-content:space-between; font-size:12px; padding:2px 0; }
+.srv-result-row .sl { color:var(--text-hint); }
+.srv-result-row .sv { color:var(--text-muted); font-weight:500; }
+.srv-result-row .sv.total { color:var(--accent); font-weight:700; }
+
+/* BOTONES */
+.btn { width:100%; padding:10px; border-radius:var(--radius); font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all .15s; font-family:inherit; }
+.btn-primary { background:var(--accent); color:#fff; margin-bottom:8px; }
+.btn-primary:hover { background:#1558b0; }
+.btn-secondary { background:transparent; color:var(--text-muted); border:1px solid var(--border-strong); }
+.btn-secondary:hover { background:var(--surface-2); }
+
+/* MARKET PANEL */
+.market-panel { max-width:980px; margin:16px auto 0; display:none; }
+.market-panel.open { display:block; }
+.market-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); }
+.market-title { font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text); display:flex; justify-content:space-between; }
+.close-btn { background:none; border:none; cursor:pointer; color:var(--text-hint); font-size:18px; }
+.market-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+.market-item { background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius); padding:12px; }
+.mi-brand { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-hint); margin-bottom:6px; }
+.mi-range { font-size:15px; font-weight:700; color:var(--text); }
+.mi-note { font-size:11px; color:var(--text-muted); margin-top:3px; }
+.market-footer { font-size:11px; color:var(--text-hint); margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+
+/* HISTORIAL */
+.history-list { max-height:260px; overflow-y:auto; }
+.history-item { padding:8px 10px; border-radius:var(--radius); background:var(--surface-2); border:1px solid var(--border); margin-bottom:6px; cursor:pointer; transition:background .1s; }
+.history-item:hover { background:var(--accent-bg); }
+.hi-header { display:flex; justify-content:space-between; align-items:baseline; }
+.hi-name { font-size:13px; font-weight:600; color:var(--text); }
+.hi-total { font-size:13px; font-weight:700; color:var(--accent); }
+.hi-date { font-size:11px; color:var(--text-hint); margin-top:2px; }
+.hi-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+.hi-chip { font-size:10px; background:var(--accent-bg); color:var(--accent-text); border-radius:10px; padding:1px 7px; }
+.empty-history { font-size:13px; color:var(--text-hint); text-align:center; padding:20px 0; }
+.clear-history { background:none; border:none; font-size:12px; color:var(--text-hint); cursor:pointer; text-decoration:underline; padding:0; display:block; margin:8px 0 0 auto; font-family:inherit; }
+
+/* TARIFAS */
+.tarifas-section { max-width:980px; margin:16px auto 0; }
+.tarifas-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
+.tarifas-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-hint); display:flex; align-items:center; gap:6px; }
+.tarifas-sub { font-size:12px; color:var(--text-hint); }
+.tarifas-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.tarifas-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface-2); padding:0 16px; gap:4px; }
+.tab-btn { background:none; border:none; border-bottom:2px solid transparent; padding:10px 14px; font-size:13px; font-weight:500; color:var(--text-muted); cursor:pointer; font-family:inherit; margin-bottom:-1px; transition:color .15s,border-color .15s; }
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.tarifas-table { width:100%; border-collapse:collapse; font-size:13px; }
+.tarifas-table thead th { text-align:left; padding:10px 16px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text-hint); border-bottom:1px solid var(--border); background:var(--surface-2); }
+.tarifas-table td { padding:10px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tarifas-table tbody tr:last-child td { border-bottom:none; }
+.tarifas-table tbody tr:hover { background:var(--surface-2); }
+.td-tipo { font-weight:500; color:var(--text); }
+.td-sub { color:var(--text-muted); font-size:12px; }
+.td-precio { font-weight:700; color:var(--accent); white-space:nowrap; }
+.td-ref { color:var(--text-hint); font-size:12px; }
+.td-act { text-align:right; white-space:nowrap; }
+.btn-usar { font-size:12px; padding:4px 10px; border-radius:6px; border:1px solid var(--border-strong); background:transparent; color:var(--text-muted); cursor:pointer; font-family:inherit; transition:background .1s; }
+.btn-usar:hover { background:var(--accent-bg); color:var(--accent-text); border-color:#b8d0f0; }
+.btn-edit-p { font-size:12px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text-hint); cursor:pointer; font-family:inherit; margin-right:4px; }
+.btn-edit-p:hover { background:var(--surface-2); color:var(--text); }
+.p-inp-edit { width:80px; padding:3px 6px; border:1px solid var(--accent); border-radius:6px; font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-bg); font-family:inherit; outline:none; }
+.tarifas-footer { padding:10px 16px; font-size:11px; color:var(--text-hint); border-top:1px solid var(--border); background:var(--surface-2); }
+.bgama { display:inline-block; font-size:10px; font-weight:600; padding:1px 7px; border-radius:10px; margin-left:5px; }
+.g-baja { background:#e6f5ed; color:#1a7a4a; }
+.g-media { background:#fef3d8; color:#8a5c00; }
+.g-alta { background:#fde8e8; color:#c0392b; }
+
+/* TOAST */
+#toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,16px); background:#1a1a18; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:999; box-shadow:0 6px 20px rgba(0,0,0,.25); max-width:90vw; text-align:center; }
+#toast.show { opacity:1; transform:translate(-50%,0); }
+#toast.err { background:var(--danger); }
+button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+#sections .tarifas-section:last-of-type { margin-bottom:48px; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="logo">Ntec<span>.</span> Presupuestos</div>
+    <div class="tagline">Calculadora de reparaciones</div>
+  </div>
+  <button type="button" class="market-pill" data-act="toggle-market">📊 Precios del mercado UY</button>
+</div>
+
+<div class="market-panel" id="market-panel">
+  <div class="market-card">
+    <div class="market-title">Referencia de mercado — cambio de pantalla celular en Uruguay <button type="button" class="close-btn" data-act="toggle-market" aria-label="Cerrar panel">×</button></div>
+    <div class="market-grid">
+      <div class="market-item"><div class="mi-brand">Xiaomi / Motorola</div><div class="mi-range">$1.000 – $4.000</div><div class="mi-note">Gama baja/media · LCD/AMOLED</div></div>
+      <div class="market-item"><div class="mi-brand">Samsung serie A</div><div class="mi-range">$1.500 – $6.000</div><div class="mi-note">Varía mucho según modelo</div></div>
+      <div class="market-item"><div class="mi-brand">Samsung S / Note</div><div class="mi-range">$6.000 – $15.000</div><div class="mi-note">AMOLED · opción solo cristal</div></div>
+      <div class="market-item"><div class="mi-brand">iPhone SE / 8 / X</div><div class="mi-range">$4.000 – $8.000</div><div class="mi-note">Incluye Face/Touch ID</div></div>
+      <div class="market-item"><div class="mi-brand">iPhone 12 / 13</div><div class="mi-range">$8.000 – $16.000</div><div class="mi-note">OLED · proceso especial</div></div>
+      <div class="market-item"><div class="mi-brand">iPhone 14 / 15</div><div class="mi-range">$14.000 – $25.500</div><div class="mi-note">Gama alta · importado</div></div>
+    </div>
+    <div class="market-footer">Fuente: ReparaloYA, Servicel, The Phone Lab (Montevideo, 2025–2026). Precios incluyen repuesto + mano de obra.</div>
+  </div>
+</div>
+
+<div id="sections"></div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────
+const fmt = n => '$' + Math.round(n).toLocaleString('es-UY');
+const num = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? n : 0; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+function lsGet(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
+  catch(e) { return fallback; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch(e) { toast('⚠️ Almacenamiento lleno: no se pudo guardar', true); return false; }
+}
+
+let toastTimer;
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', !!isErr);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ── CONFIG POR SECCIÓN ───────────────────────────────────
+const NSS = ['cel', 'pc'];
+const GARANTIAS = ['30 días','90 días','6 meses','1 año'];
+
+const CFG = {
+  cel: {
+    titulo: 'Celular',
+    tarifasTitulo: 'Celulares',
+    tipoPDF: 'Celular',
+    histTitulo: 'Historial',
+    icono: '<svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>',
+    phEquipo: 'Ej: Samsung A54 — pantalla + batería',
+    phNotas: 'Ej: pantalla genérica, cliente trae repuesto...',
+    grupos: [
+      { g:'Samsung', items:[
+        { v:'Pantalla Samsung A baja', t:'Pantalla Samsung A baja (A02/A12/A13)', p:900 },
+        { v:'Pantalla Samsung A media', t:'Pantalla Samsung A media (A32/A52/A53)', p:1200 },
+        { v:'Pantalla Samsung S', t:'Pantalla Samsung serie S', p:2500 },
+        { v:'Batería Samsung A baja', t:'Batería Samsung A baja', p:600 },
+        { v:'Batería Samsung A media', t:'Batería Samsung A media', p:800 },
+        { v:'Batería Samsung S', t:'Batería Samsung serie S', p:1400 },
+        { v:'Conector Samsung A', t:'Conector de carga Samsung A', p:900 },
+        { v:'Conector Samsung S', t:'Conector de carga Samsung S', p:1500 },
+        { v:'Cámara Samsung', t:'Cámara trasera Samsung', p:1000 },
+        { v:'Tapa trasera Samsung', t:'Tapa trasera Samsung', p:700 },
+        { v:'Parlante Samsung', t:'Parlante / auricular Samsung', p:800 },
+      ]},
+      { g:'iPhone', items:[
+        { v:'Pantalla iPhone SE/8/X', t:'Pantalla iPhone SE / 8 / X', p:2000 },
+        { v:'Pantalla iPhone 12/13', t:'Pantalla iPhone 12 / 13', p:3000 },
+        { v:'Pantalla iPhone 14/15', t:'Pantalla iPhone 14 / 15', p:4000 },
+        { v:'Batería iPhone', t:'Batería iPhone', p:1500 },
+        { v:'Conector iPhone', t:'Conector / puerto iPhone', p:1200 },
+      ]},
+      { g:'Xiaomi / Motorola', items:[
+        { v:'Pantalla Xiaomi/Moto baja', t:'Pantalla Xiaomi/Moto gama baja', p:700 },
+        { v:'Pantalla Xiaomi/Moto media', t:'Pantalla Xiaomi/Moto gama media', p:1000 },
+        { v:'Batería Xiaomi/Moto', t:'Batería Xiaomi / Motorola', p:600 },
+        { v:'Conector Xiaomi/Moto', t:'Conector Xiaomi / Motorola', p:700 },
+      ]},
+      { g:'General', items:[
+        { v:'Diagnóstico celular', t:'Diagnóstico técnico', p:400 },
+        { v:'Limpieza interna / humedad', t:'Limpieza interna / humedad', p:500 },
+        { v:'Otro servicio', t:'Otro (ingresás el precio)', p:0 },
+      ]},
+    ],
+    tabs: [['samsung','Samsung'],['iphone','iPhone'],['xiaomi','Xiaomi / Moto']],
+    th: ['Reparación','Modelos'],
+    refFooter: 'Referencias: ReparaloYA, Servicel, MercadoLibre UY (2025–2026).',
+  },
+  pc: {
+    titulo: 'PC / Laptop',
+    tarifasTitulo: 'PC &amp; Laptops',
+    tipoPDF: 'PC_Laptop',
+    histTitulo: 'Historial PC',
+    icono: '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+    phEquipo: 'Ej: Lenovo IdeaPad 3 — SSD + RAM + Windows',
+    phNotas: 'Ej: SSD Kingston 512GB incluido, cliente trae el repuesto...',
+    divider: true,
+    grupos: [
+      { g:'Hardware', items:[
+        { v:'Pantalla laptop gama baja/media', t:'Pantalla laptop (gama baja/media)', p:2000 },
+        { v:'Pantalla laptop gama alta/táctil', t:'Pantalla laptop (gama alta/táctil)', p:3000 },
+        { v:'Teclado estándar', t:'Teclado estándar', p:1200 },
+        { v:'Teclado retroiluminado', t:'Teclado retroiluminado', p:1800 },
+        { v:'Batería laptop', t:'Batería laptop', p:1000 },
+        { v:'Cambio HDD → SSD con clonación', t:'Cambio HDD → SSD (con clonación)', p:1500 },
+        { v:'Upgrade / instalación RAM', t:'Upgrade / instalación RAM', p:700 },
+        { v:'Clonación de disco', t:'Clonación de disco', p:1200 },
+        { v:'Reparación placa / soldadura', t:'Reparación placa / soldadura', p:3500 },
+        { v:'Otro hardware PC', t:'Otro hardware (ingresás precio)', p:0 },
+      ]},
+      { g:'Software', items:[
+        { v:'Instalación Windows', t:'Instalación Windows', p:1200 },
+        { v:'Formateo completo', t:'Formateo completo (backup + Win + config)', p:1800 },
+        { v:'Instalación de software', t:'Instalación de software (Office, etc.)', p:800 },
+        { v:'Eliminación virus / malware', t:'Eliminación virus / malware', p:1500 },
+        { v:'Recuperación de datos (disco accesible)', t:'Recuperación datos (disco accesible)', p:2000 },
+        { v:'Recuperación de datos (daño físico)', t:'Recuperación datos (daño físico)', p:4000 },
+        { v:'Optimización del sistema', t:'Optimización / limpieza sistema', p:900 },
+      ]},
+      { g:'Mantenimiento', items:[
+        { v:'Mantenimiento: limpieza + pasta térmica', t:'Mantenimiento: limpieza + pasta', p:1200 },
+        { v:'Mantenimiento completo + ventilador', t:'Mantenimiento + reemplazo ventilador', p:1800 },
+        { v:'Diagnóstico técnico PC', t:'Diagnóstico técnico', p:500 },
+      ]},
+    ],
+    tabs: [['hw','🔧 Hardware'],['sw','💻 Software'],['mant','🧹 Mantenimiento']],
+    th: ['Servicio','Detalle'],
+    refFooter: 'Referencias: WaltosTech UY, Tecnico.uy, MercadoLibre UY (2025–2026).',
+  },
+};
+
+// ── TARIFAS (valores por defecto editables) ──────────────
+const TDEF = {
+  cel: {
+    samsung: [
+      {id:'cs1',tipo:'Pantalla',det:'A baja (A02/A12/A13)',gama:'baja',precio:900,ref:'Total mercado $1.000–$4.000'},
+      {id:'cs2',tipo:'Pantalla',det:'A media (A32/A52/A53/A54)',gama:'media',precio:1200,ref:'Total mercado $2.500–$6.000'},
+      {id:'cs3',tipo:'Pantalla',det:'Serie S (S21/S22/S23)',gama:'alta',precio:2500,ref:'Total mercado $6.000–$15.000'},
+      {id:'cs4',tipo:'Batería',det:'A baja',gama:'baja',precio:600,ref:'$990–$1.190 con colocación'},
+      {id:'cs5',tipo:'Batería',det:'A media',gama:'media',precio:800,ref:'Estimado mercado UY'},
+      {id:'cs6',tipo:'Batería',det:'Serie S',gama:'alta',precio:1400,ref:'Estimado mercado UY'},
+      {id:'cs7',tipo:'Conector de carga',det:'Serie A',gama:'media',precio:900,ref:'Estimado mercado UY'},
+      {id:'cs8',tipo:'Conector de carga',det:'Serie S',gama:'alta',precio:1500,ref:'Estimado mercado UY'},
+      {id:'cs9',tipo:'Cámara trasera',det:'Serie A media/alta',gama:'media',precio:1000,ref:'Estimado mercado UY'},
+      {id:'cs10',tipo:'Tapa trasera',det:'Serie A',gama:'baja',precio:700,ref:'Estimado mercado UY'},
+      {id:'cs11',tipo:'Parlante',det:'Serie A',gama:'baja',precio:800,ref:'Estimado mercado UY'},
+    ],
+    iphone: [
+      {id:'ci1',tipo:'Pantalla',det:'iPhone SE / 8 / X',gama:'media',precio:2000,ref:'Total mercado $4.000–$8.000'},
+      {id:'ci2',tipo:'Pantalla',det:'iPhone 12 / 13',gama:'alta',precio:3000,ref:'Total mercado $8.000–$16.000'},
+      {id:'ci3',tipo:'Pantalla',det:'iPhone 14 / 15',gama:'alta',precio:4000,ref:'Total mercado $14.000–$25.500'},
+      {id:'ci4',tipo:'Batería',det:'Todas las series',gama:'media',precio:1500,ref:'Estimado mercado UY'},
+      {id:'ci5',tipo:'Conector',det:'Lightning / USB-C',gama:'media',precio:1200,ref:'Estimado mercado UY'},
+      {id:'ci6',tipo:'Cámara',det:'iPhone 12/13/14',gama:'alta',precio:2000,ref:'Estimado mercado UY'},
+    ],
+    xiaomi: [
+      {id:'cx1',tipo:'Pantalla',det:'Gama baja (Redmi 9/10/12)',gama:'baja',precio:700,ref:'Estimado mercado UY'},
+      {id:'cx2',tipo:'Pantalla',det:'Gama media (Note 12/13)',gama:'media',precio:1000,ref:'Estimado mercado UY'},
+      {id:'cx3',tipo:'Batería',det:'Xiaomi / Motorola',gama:'baja',precio:600,ref:'Estimado mercado UY'},
+      {id:'cx4',tipo:'Conector',det:'Xiaomi / Motorola',gama:'baja',precio:700,ref:'Estimado mercado UY'},
+      {id:'cx5',tipo:'Pantalla',det:'Motorola gama baja',gama:'baja',precio:700,ref:'Estimado mercado UY'},
+      {id:'cx6',tipo:'Pantalla',det:'Motorola gama media',gama:'media',precio:1000,ref:'Estimado mercado UY'},
+    ]
+  },
+  pc: {
+    hw: [
+      {id:'ph1',tipo:'Pantalla laptop',det:'Gama baja/media',gama:'media',precio:2000,ref:'Mano de obra $1.500–$2.500 UY'},
+      {id:'ph2',tipo:'Pantalla laptop',det:'Gama alta / táctil',gama:'alta',precio:3000,ref:'Mano de obra $2.500–$4.000 UY'},
+      {id:'ph3',tipo:'Teclado',det:'Estándar',gama:'baja',precio:1200,ref:'Mano de obra $800–$1.500 UY'},
+      {id:'ph4',tipo:'Teclado',det:'Retroiluminado',gama:'media',precio:1800,ref:'Mano de obra $1.200–$2.000 UY'},
+      {id:'ph5',tipo:'Batería laptop',det:'Estándar',gama:'baja',precio:1000,ref:'Mano de obra $800–$1.200 UY'},
+      {id:'ph6',tipo:'HDD → SSD',det:'Instalación + clonación',gama:'media',precio:1500,ref:'$1.200–$1.800 UY (WaltosTech)'},
+      {id:'ph7',tipo:'Upgrade RAM',det:'Instalación módulo',gama:'baja',precio:700,ref:'Mano de obra $500–$1.000 UY'},
+      {id:'ph8',tipo:'Clonación disco',det:'Sin cambio de hardware',gama:'media',precio:1200,ref:'Estimado mercado UY'},
+      {id:'ph9',tipo:'Placa / soldadura',det:'Reballing / reparación',gama:'alta',precio:3500,ref:'Mano de obra $2.500–$5.000 UY'},
+    ],
+    sw: [
+      {id:'ps1',tipo:'Instalación Windows',det:'Win 10/11 + drivers',gama:'baja',precio:1200,ref:'Desde $1.000 UY'},
+      {id:'ps2',tipo:'Formateo completo',det:'Backup + Win + config',gama:'media',precio:1800,ref:'$1.000–$2.000 UY mercado'},
+      {id:'ps3',tipo:'Instalación software',det:'Office, antivirus, otros',gama:'baja',precio:800,ref:'Estimado mercado UY'},
+      {id:'ps4',tipo:'Virus / malware',det:'Desinfección + optim.',gama:'media',precio:1500,ref:'Estimado mercado UY'},
+      {id:'ps5',tipo:'Recuperación datos',det:'Disco accesible',gama:'media',precio:2000,ref:'Estimado mercado UY'},
+      {id:'ps6',tipo:'Recuperación datos',det:'Daño físico / avanzado',gama:'alta',precio:4000,ref:'Estimado mercado UY'},
+      {id:'ps7',tipo:'Optimización sistema',det:'Limpieza + startup',gama:'baja',precio:900,ref:'Estimado mercado UY'},
+    ],
+    mant: [
+      {id:'pm1',tipo:'Mantenimiento',det:'Limpieza + pasta térmica',gama:'baja',precio:1200,ref:'Estimado mercado UY'},
+      {id:'pm2',tipo:'Mantenimiento',det:'Limpieza + pasta + ventilador',gama:'media',precio:1800,ref:'Estimado mercado UY'},
+      {id:'pm3',tipo:'Diagnóstico',det:'Evaluación completa',gama:'baja',precio:500,ref:'Muchos cobran $0 si reparan'},
+      {id:'pm4',tipo:'Diagnóstico',det:'Placa / falla compleja',gama:'media',precio:1000,ref:'Estimado mercado UY'},
+    ]
+  }
+};
+
+function getTarifas(ns) { return lsGet('ntec_t2_' + ns, null) || TDEF[ns]; }
+function saveTarifas(ns, data) { lsSet('ntec_t2_' + ns, data); }
+
+// ── ESTADO ───────────────────────────────────────────────
+let uid = 1;
+const srvs = { cel: [], pc: [] };
+const activeCat = { cel: 'samsung', pc: 'hw' };
+
+// ── PLANTILLAS ───────────────────────────────────────────
+function selectTpl(ns) {
+  const C = CFG[ns];
+  return `<option value="">— Seleccioná un servicio —</option>` +
+    C.grupos.map(g =>
+      `<optgroup label="${esc(g.g)}">` +
+      g.items.map(it => `<option value="${esc(it.v)}|${it.p}">${esc(it.t)}</option>`).join('') +
+      `</optgroup>`
+    ).join('');
+}
+
+function garantiaTpl() {
+  return `<option value="">Sin garantía</option>` +
+    GARANTIAS.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+}
+
+function tarifasTpl(ns) {
+  const C = CFG[ns];
+  const firstCat = C.tabs[0][0];
+  const tabsHtml = C.tabs.map(([cat, lbl]) =>
+    `<button type="button" class="tab-btn${cat === firstCat ? ' active' : ''}" id="${ns}-tb-${cat}" data-act="tab" data-ns="${ns}" data-cat="${cat}">${lbl}</button>`
+  ).join('');
+  const panelsHtml = C.tabs.map(([cat]) =>
+    `<div class="tab-content${cat === firstCat ? ' active' : ''}" id="${ns}-tab-${cat}">
+      <table class="tarifas-table">
+        <thead><tr><th style="width:26%">${C.th[0]}</th><th style="width:26%">${C.th[1]}</th><th style="width:14%">Mano de obra</th><th style="width:22%">Ref. mercado UY</th><th style="width:12%"></th></tr></thead>
+        <tbody id="${ns}-tbody-${cat}"></tbody>
+      </table>
+    </div>`
+  ).join('');
+  return `
+  <div class="tarifas-section">
+    <div class="tarifas-header">
+      <div class="tarifas-title">📋 Tarifas mano de obra — ${C.tarifasTitulo}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="tarifas-sub">✏️ editar · "Usar →" agrega el servicio arriba</span>
+        <button type="button" class="btn-edit-p" data-act="reset-tarifas" data-ns="${ns}" style="font-size:11px">↺ Restaurar</button>
+      </div>
+    </div>
+    <div class="tarifas-card">
+      <div class="tarifas-tabs">${tabsHtml}</div>
+      ${panelsHtml}
+      <div class="tarifas-footer">${C.refFooter}</div>
+    </div>
+  </div>`;
+}
+
+function sectionTpl(ns) {
+  const C = CFG[ns];
+  const divider = C.divider ? `
+  <div class="section-divider">
+    <div class="line"></div>
+    <div class="lbl">${C.icono}PC &amp; Laptops</div>
+    <div class="line"></div>
+  </div>` : '';
+  return divider + `
+  <div class="layout">
+    <div class="card">
+      <div class="card-title">${C.icono}${C.titulo} — Datos</div>
+      <div class="field"><label for="${ns}-equipo">Equipo / descripción</label><input type="text" id="${ns}-equipo" placeholder="${esc(C.phEquipo)}"></div>
+      <div class="field"><label for="${ns}-cliente">Cliente (opcional)</label><input type="text" id="${ns}-cliente" placeholder="Nombre del cliente"></div>
+      <div class="divider"></div>
+
+      <label for="${ns}-sel" style="margin-bottom:8px">Servicios <span style="color:var(--text-hint);font-weight:400;font-size:12px">— cada uno con su repuesto y ganancia</span></label>
+      <div class="add-row">
+        <select id="${ns}-sel">${selectTpl(ns)}</select>
+        <button type="button" class="btn-add" data-act="add-srv" data-ns="${ns}">+ Agregar</button>
+      </div>
+
+      <div class="servicios-lista" id="${ns}-lista"></div>
+
+      <div class="divider"></div>
+      <div class="field"><label for="${ns}-otros">Otros costos</label><div class="pfx"><span>$</span><input type="number" id="${ns}-otros" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-garantia">Garantía ofrecida</label><select id="${ns}-garantia">${garantiaTpl()}</select></div>
+      <div class="field"><label for="${ns}-notas">Notas internas</label><textarea id="${ns}-notas" rows="2" placeholder="${esc(C.phNotas)}"></textarea></div>
+      <div class="divider"></div>
+      <button type="button" class="btn btn-primary" data-act="save" data-ns="${ns}">💾 Guardar presupuesto</button>
+      <button type="button" class="btn btn-secondary" data-act="pdf" data-ns="${ns}">📄 Generar PDF para cliente</button>
+      <button type="button" class="btn btn-secondary" data-act="clear-form" data-ns="${ns}">Limpiar formulario</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title">${C.icono}Presupuesto ${C.titulo}</div>
+        <div class="metric-grid">
+          <div class="metric"><div class="m-label">Total al cliente</div><div class="m-value accent" id="${ns}-r-total">$0</div></div>
+          <div class="metric"><div class="m-label">Tu ganancia neta</div><div class="m-value success" id="${ns}-r-neta">$0</div></div>
+        </div>
+        <div id="${ns}-r-detalle"></div>
+        <div class="divider"></div>
+        <div class="result-row"><span class="rl">Otros costos</span><span class="rv" id="${ns}-r-otros" style="display:none">$0</span></div>
+        <div class="result-total"><span>Total <span id="${ns}-badge" class="badge badge-ok">—</span></span><span id="${ns}-r-total2">$0</span></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-hint);text-align:right" id="${ns}-r-garantia"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>${esc(C.histTitulo)}</div>
+        <div class="history-list" id="${ns}-history"></div>
+        <button type="button" class="clear-history" data-act="clear-history" data-ns="${ns}">Borrar historial</button>
+      </div>
+    </div>
+  </div>
+
+  ${tarifasTpl(ns)}`;
+}
+
+// ── TOTALES ──────────────────────────────────────────────
+function totales(lista) {
+  let totalMano = 0, totalRep = 0, totalGan = 0;
+  lista.forEach(s => {
+    totalMano += num(s.mano);
+    totalRep  += num(s.repuesto);
+    totalGan  += num(s.repuesto) * (num(s.pct) / 100);
+  });
+  return { totalMano, totalRep, totalGan };
+}
+
+// ── SERVICIOS ────────────────────────────────────────────
+function agregarSrv(ns) {
+  const sel = document.getElementById(ns + '-sel');
+  const val = sel.value;
+  if (!val) return;
+  const [nombre, precioStr] = val.split('|');
+  let mano = num(precioStr);
+  if (mano === 0) mano = num(prompt('Ingresá la mano de obra para: ' + nombre));
+  srvs[ns].push({ id: uid++, nombre, mano, repuesto: 0, pct: 30 });
+  sel.value = '';
+  renderSrvs(ns);
+  calcular(ns);
+  saveDraft(ns);
+}
+
+// "Usar →" desde tarifas — agrega listo para completar
+function usarTarifa(ns, cat, id) {
+  const row = (getTarifas(ns)[cat] || []).find(r => r.id === id);
+  if (!row) return;
+  srvs[ns].push({ id: uid++, nombre: row.tipo + ' — ' + row.det, mano: num(row.precio), repuesto: 0, pct: 30 });
+  renderSrvs(ns);
+  calcular(ns);
+  saveDraft(ns);
+  document.getElementById(ns + '-lista').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function quitarSrv(ns, id) {
+  srvs[ns] = srvs[ns].filter(s => s.id !== id);
+  renderSrvs(ns);
+  calcular(ns);
+  saveDraft(ns);
+}
+
+function onSrvChange(ns, id, campo, val) {
+  const s = srvs[ns].find(x => x.id === id);
+  if (!s) return;
+  s[campo] = num(val);
+  const gan = num(s.repuesto) * (num(s.pct) / 100);
+  const badge = document.getElementById('srv-badge-' + id);
+  if (badge) badge.textContent = 'Total: ' + fmt(num(s.mano) + num(s.repuesto) + gan);
+  calcular(ns);
+  saveDraft(ns);
+}
+
+function renderSrvs(ns) {
+  const cont = document.getElementById(ns + '-lista');
+  if (!srvs[ns].length) {
+    cont.innerHTML = '<div class="empty-srv">Ningún servicio agregado aún</div>';
+    return;
+  }
+  cont.innerHTML = srvs[ns].map(s => {
+    const gan = num(s.repuesto) * (num(s.pct) / 100);
+    const tot = num(s.mano) + num(s.repuesto) + gan;
+    return `
+    <div class="srv-card">
+      <div class="srv-card-header">
+        <span class="srv-name">${esc(s.nombre)}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="srv-total-badge" id="srv-badge-${s.id}">Total: ${fmt(tot)}</span>
+          <button type="button" class="btn-quitar" data-act="remove-srv" data-ns="${ns}" data-id="${s.id}" aria-label="Quitar ${esc(s.nombre)}">×</button>
+        </div>
+      </div>
+      <div class="srv-fields">
+        <div class="srv-field">
+          <label>Mano de obra</label>
+          <div class="pfx"><span>$</span><input type="number" class="srv-input" data-ns="${ns}" data-id="${s.id}" data-campo="mano" value="${s.mano}" min="0" step="50"></div>
+        </div>
+        <div class="srv-field">
+          <label>Costo repuesto</label>
+          <div class="pfx"><span>$</span><input type="number" class="srv-input" data-ns="${ns}" data-id="${s.id}" data-campo="repuesto" value="${s.repuesto || ''}" min="0" step="50" placeholder="0"></div>
+        </div>
+        <div class="srv-field">
+          <label>% Ganancia repuesto</label>
+          <div class="sfx"><input type="number" class="srv-input" data-ns="${ns}" data-id="${s.id}" data-campo="pct" value="${s.pct}" min="0" max="500" step="5"><span>%</span></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── CALCULAR ─────────────────────────────────────────────
+function calcular(ns) {
+  const lista = srvs[ns];
+  const otros = num(document.getElementById(ns + '-otros').value);
+  const garantia = document.getElementById(ns + '-garantia').value;
+  const { totalMano, totalRep, totalGan } = totales(lista);
+
+  const total = totalMano + totalRep + totalGan + otros;
+  const neta  = totalMano + totalGan;
+  const margen = total > 0 ? Math.round((neta / total) * 100) : 0;
+
+  const det = document.getElementById(ns + '-r-detalle');
+  det.innerHTML = lista.length ? lista.map(s => {
+    const gan = num(s.repuesto) * (num(s.pct) / 100);
+    const tot = num(s.mano) + num(s.repuesto) + gan;
+    return `<div class="srv-result-block">
+      <div class="srv-r-name">${esc(s.nombre)}</div>
+      <div class="srv-result-row"><span class="sl">Mano de obra</span><span class="sv">${fmt(num(s.mano))}</span></div>
+      ${num(s.repuesto) > 0 ? `<div class="srv-result-row"><span class="sl">Repuesto</span><span class="sv">${fmt(num(s.repuesto))}</span></div>` : ''}
+      ${num(s.repuesto) > 0 ? `<div class="srv-result-row"><span class="sl">Ganancia (${num(s.pct)}%)</span><span class="sv">${fmt(gan)}</span></div>` : ''}
+      <div class="srv-result-row"><span class="sl">Subtotal</span><span class="sv total">${fmt(tot)}</span></div>
+    </div>`;
+  }).join('') : '';
+
+  document.getElementById(ns + '-r-total').textContent  = fmt(total);
+  document.getElementById(ns + '-r-total2').textContent = fmt(total);
+  document.getElementById(ns + '-r-neta').textContent   = fmt(neta);
+  const otrosEl = document.getElementById(ns + '-r-otros');
+  if (otros > 0) { otrosEl.textContent = fmt(otros); otrosEl.style.display = ''; }
+  else { otrosEl.style.display = 'none'; }
+  document.getElementById(ns + '-r-garantia').textContent = garantia ? 'Garantía: ' + garantia : '';
+
+  const badge = document.getElementById(ns + '-badge');
+  badge.textContent = margen + '% margen';
+  badge.className = margen >= 35 ? 'badge badge-ok' : margen >= 20 ? 'badge badge-warn' : 'badge badge-low';
+}
+
+// ── BORRADOR (autoguardado del formulario) ───────────────
+function saveDraft(ns) {
+  const v = id => document.getElementById(id).value;
+  lsSet('ntec_' + ns + '_draft', {
+    equipo: v(ns+'-equipo'), cliente: v(ns+'-cliente'),
+    otros: v(ns+'-otros'), garantia: v(ns+'-garantia'), notas: v(ns+'-notas'),
+    srvs: srvs[ns],
+  });
+}
+
+function loadDraft(ns) {
+  const d = lsGet('ntec_' + ns + '_draft', null);
+  if (!d || (!d.equipo && !d.cliente && !(d.srvs && d.srvs.length))) return false;
+  const v = id => document.getElementById(id);
+  v(ns+'-equipo').value   = d.equipo || '';
+  v(ns+'-cliente').value  = d.cliente || '';
+  v(ns+'-otros').value    = d.otros || '';
+  v(ns+'-garantia').value = d.garantia || '';
+  v(ns+'-notas').value    = d.notas || '';
+  srvs[ns] = (d.srvs || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
+  renderSrvs(ns);
+  calcular(ns);
+  return true;
+}
+
+function clearDraft(ns) { try { localStorage.removeItem('ntec_' + ns + '_draft'); } catch(e){} }
+
+// ── GUARDAR / LIMPIAR ────────────────────────────────────
+function guardar(ns) {
+  const equipo = document.getElementById(ns + '-equipo').value.trim();
+  if (!equipo) { toast('Ingresá una descripción del equipo.', true); return; }
+  if (!srvs[ns].length) { toast('Agregá al menos un servicio.', true); return; }
+  const otros = num(document.getElementById(ns + '-otros').value);
+  const { totalMano, totalRep, totalGan } = totales(srvs[ns]);
+  const entry = {
+    id: Date.now(),
+    fecha: new Date().toLocaleDateString('es-UY'),
+    equipo,
+    cliente: document.getElementById(ns + '-cliente').value.trim(),
+    servicios: srvs[ns].map(s => ({ nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) })),
+    otros,
+    garantia: document.getElementById(ns + '-garantia').value,
+    notas: document.getElementById(ns + '-notas').value.trim(),
+    total: Math.round(totalMano + totalRep + totalGan + otros),
+  };
+  const key = 'ntec_' + ns + '_h';
+  const h = lsGet(key, []);
+  h.unshift(entry);
+  if (h.length > 30) h.length = 30;
+  if (lsSet(key, h)) {
+    renderHistory(ns);
+    toast('✓ Presupuesto guardado en el historial');
+  }
+}
+
+function limpiar(ns) {
+  srvs[ns] = [];
+  renderSrvs(ns);
+  ['equipo','cliente','otros','notas'].forEach(f => { const el = document.getElementById(ns+'-'+f); if(el) el.value=''; });
+  document.getElementById(ns + '-garantia').value = '';
+  clearDraft(ns);
+  calcular(ns);
+}
+
+// ── HISTORIAL ────────────────────────────────────────────
+function renderHistory(ns) {
+  const cont = document.getElementById(ns + '-history');
+  const h = lsGet('ntec_' + ns + '_h', []);
+  if (!h.length) { cont.innerHTML = '<div class="empty-history">Todavía no hay presupuestos guardados</div>'; return; }
+  cont.innerHTML = h.map(e => `
+    <div class="history-item" role="button" tabindex="0" data-act="load-entry" data-ns="${ns}" data-id="${e.id}">
+      <div class="hi-header"><span class="hi-name">${esc(e.equipo)}</span><span class="hi-total">${fmt(e.total)}</span></div>
+      <div class="hi-date">${esc(e.fecha)}${e.cliente ? ' · ' + esc(e.cliente) : ''}</div>
+      ${e.servicios && e.servicios.length ? '<div class="hi-chips">' + e.servicios.map(s=>`<span class="hi-chip">${esc(s.nombre)}</span>`).join('') + '</div>' : ''}
+    </div>`).join('');
+}
+
+function cargarEntrada(ns, id) {
+  const e = lsGet('ntec_' + ns + '_h', []).find(x => x.id === id);
+  if (!e) return;
+  document.getElementById(ns + '-equipo').value   = e.equipo || '';
+  document.getElementById(ns + '-cliente').value  = e.cliente || '';
+  document.getElementById(ns + '-otros').value    = e.otros || '';
+  document.getElementById(ns + '-garantia').value = e.garantia || '';
+  document.getElementById(ns + '-notas').value    = e.notas || '';
+  srvs[ns] = (e.servicios || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
+  renderSrvs(ns);
+  calcular(ns);
+  saveDraft(ns);
+  document.getElementById(ns + '-equipo').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+function clearHistory(ns) {
+  if (confirm('¿Borrar todo el historial?')) {
+    localStorage.removeItem('ntec_' + ns + '_h');
+    renderHistory(ns);
+    toast('Historial borrado');
+  }
+}
+
+// ── GENERAR PDF ──────────────────────────────────────────
+function generarPDF(ns) {
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    toast('No se pudo cargar jsPDF — verificá tu conexión a internet.', true);
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const C = CFG[ns];
+  const equipo = document.getElementById(ns + '-equipo').value.trim();
+  const cliente = document.getElementById(ns + '-cliente').value.trim();
+  const garantia = document.getElementById(ns + '-garantia').value;
+  const notas = document.getElementById(ns + '-notas').value.trim();
+  const otros = num(document.getElementById(ns + '-otros').value);
+
+  if (!equipo) { toast('Ingresá una descripción del equipo.', true); return; }
+
+  const { totalMano, totalRep, totalGan } = totales(srvs[ns]);
+  const total = Math.round(totalMano + totalRep + totalGan + otros);
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const usableWidth = pageWidth - margin * 2;
+
+  // Encabezado
+  doc.setFillColor(26, 111, 212);
+  doc.rect(0, 0, pageWidth, 35, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Ntec', margin, 18);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Reparaciones', margin + 12, 18);
+  doc.setFontSize(9);
+  doc.text('Presupuesto de ' + C.tipoPDF.replace('_', ' / '), margin, 28);
+  doc.text('Fecha: ' + new Date().toLocaleDateString('es-UY'), pageWidth - margin, 18, { align: 'right' });
+  doc.text('Nº: ' + Date.now().toString().slice(-6), pageWidth - margin, 25, { align: 'right' });
+
+  let y = 45;
+  doc.setTextColor(0, 0, 0);
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Equipo:', margin, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(equipo, margin + 18, y);
+  y += 7;
+  const linea = (lbl, val, off) => {
+    doc.setFont('helvetica', 'bold');
+    doc.text(lbl, margin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(val, margin + off, y);
+    y += 7;
+  };
+  if (cliente) linea('Cliente:', cliente, 20);
+  if (garantia) linea('Garantía:', garantia, 22);
+
+  y += 5;
+  doc.setDrawColor(226, 224, 216);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detalle de servicios', margin, y);
+  y += 8;
+
+  doc.setFontSize(8);
+  doc.setFillColor(245, 244, 240);
+  doc.rect(margin, y - 4, usableWidth, 7, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.text('Servicio', margin + 2, y);
+  doc.text('Precio', margin + usableWidth, y, { align: 'right' });
+  y += 3;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+
+  srvs[ns].forEach(s => {
+    if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+    const gan = num(s.repuesto) * (num(s.pct) / 100);
+    const tot = num(s.mano) + num(s.repuesto) + gan;
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(s.nombre).substring(0, 50), margin + 2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmt(tot), margin + usableWidth, y, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    y += 7;
+  });
+
+  if (otros > 0) {
+    if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+    doc.setTextColor(0, 0, 0);
+    doc.text('Otros costos', margin + 2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(fmt(otros), margin + usableWidth, y, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    y += 7;
+  }
+
+  // Total
+  if (y > pageHeight - 55) { doc.addPage(); y = 20; }
+  y += 3;
+  doc.setDrawColor(26, 111, 212);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 8;
+  doc.setFillColor(232, 241, 252);
+  doc.rect(margin, y - 5, usableWidth, 12, 'F');
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(26, 111, 212);
+  doc.text('TOTAL:', margin + usableWidth * 0.65, y + 2);
+  doc.text(fmt(total), margin + usableWidth, y + 2, { align: 'right' });
+
+  // Notas (con salto de página para no chocar con el pie)
+  if (notas) {
+    y += 15;
+    if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+    doc.setFontSize(8);
+    doc.setTextColor(107, 106, 101);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Notas:', margin, y);
+    doc.setFont('helvetica', 'normal');
+    y += 4;
+    const notaLines = doc.splitTextToSize(notas, usableWidth);
+    notaLines.forEach(l => {
+      if (y > pageHeight - 20) { doc.addPage(); y = 20; }
+      doc.text(l, margin, y);
+      y += 4;
+    });
+  }
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(158, 156, 150);
+  doc.text('Generado por Ntec Presupuestos · Este presupuesto tiene validez por 7 días.', pageWidth / 2, 285, { align: 'center' });
+
+  const fileName = 'Ntec_Presupuesto_' + C.tipoPDF + '_' + equipo.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30) + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+  doc.save(fileName);
+}
+
+// ── TABLA DE TARIFAS ─────────────────────────────────────
+function renderTarifas(ns, cat) {
+  const rows = getTarifas(ns)[cat] || [];
+  const tbody = document.getElementById(ns + '-tbody-' + cat);
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="td-tipo">${esc(r.tipo)}<span class="bgama g-${r.gama}">${esc(r.gama)}</span></td>
+      <td class="td-sub">${esc(r.det)}</td>
+      <td class="td-precio">
+        <span id="td-${r.id}">${fmt(num(r.precio))}</span>
+        <input class="p-inp-edit" id="ti-${r.id}" type="number" value="${r.precio}" style="display:none"
+          data-ns="${ns}" data-cat="${cat}" data-id="${r.id}">
+      </td>
+      <td class="td-ref">${esc(r.ref)}</td>
+      <td class="td-act">
+        <button type="button" class="btn-edit-p" data-act="edit-tarifa" data-id="${r.id}" title="Editar" aria-label="Editar precio">✏️</button>
+        <button type="button" class="btn-usar" data-act="usar-tarifa" data-ns="${ns}" data-cat="${cat}" data-id="${r.id}">Usar →</button>
+      </td>
+    </tr>`).join('');
+}
+
+function startEdit(id) {
+  document.getElementById('td-' + id).style.display = 'none';
+  const inp = document.getElementById('ti-' + id);
+  inp.style.display = 'inline-block'; inp.focus(); inp.select();
+}
+
+function confirmEdit(ns, cat, id) {
+  const inp = document.getElementById('ti-' + id);
+  if (!inp || inp.style.display === 'none') return;
+  const nuevo = num(inp.value);
+  const data = getTarifas(ns);
+  const row = (data[cat] || []).find(r => r.id === id);
+  if (row) { row.precio = nuevo; saveTarifas(ns, data); toast('✓ Precio actualizado'); }
+  renderTarifas(ns, cat);
+}
+
+function resetTarifas(ns) {
+  if (confirm('¿Restaurar tarifas a los valores sugeridos del mercado?')) {
+    localStorage.removeItem('ntec_t2_' + ns);
+    renderTarifas(ns, activeCat[ns]);
+    toast('↺ Tarifas restauradas');
+  }
+}
+
+function switchTab(ns, cat) {
+  document.querySelectorAll('[id^="' + ns + '-tb-"]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[id^="' + ns + '-tab-"]').forEach(c => c.classList.remove('active'));
+  document.getElementById(ns + '-tb-' + cat).classList.add('active');
+  document.getElementById(ns + '-tab-' + cat).classList.add('active');
+  activeCat[ns] = cat;
+  renderTarifas(ns, cat);
+}
+
+function toggleMarket() { document.getElementById('market-panel').classList.toggle('open'); }
+
+// ── EVENTOS (delegación global) ──────────────────────────
+const ACTIONS = {
+  'toggle-market': () => toggleMarket(),
+  'add-srv': ns => agregarSrv(ns),
+  'remove-srv': (ns, el) => quitarSrv(ns, +el.dataset.id),
+  'save': ns => guardar(ns),
+  'pdf': ns => generarPDF(ns),
+  'clear-form': ns => limpiar(ns),
+  'clear-history': ns => clearHistory(ns),
+  'load-entry': (ns, el) => cargarEntrada(ns, +el.dataset.id),
+  'tab': (ns, el) => switchTab(ns, el.dataset.cat),
+  'reset-tarifas': ns => resetTarifas(ns),
+  'edit-tarifa': (ns, el) => startEdit(el.dataset.id),
+  'usar-tarifa': (ns, el) => usarTarifa(ns, el.dataset.cat, el.dataset.id),
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const fn = ACTIONS[el.dataset.act];
+  if (fn) fn(el.dataset.ns, el);
+});
+
+function onFieldInput(e) {
+  const t = e.target;
+  if (!t.id && !t.classList) return;
+  if (t.classList.contains('srv-input')) {
+    onSrvChange(t.dataset.ns, +t.dataset.id, t.dataset.campo, t.value);
+    return;
+  }
+  const ns = NSS.find(n => t.id && t.id.startsWith(n + '-'));
+  if (ns) { calcular(ns); saveDraft(ns); }
+}
+document.addEventListener('input', onFieldInput);
+document.addEventListener('change', onFieldInput);
+
+document.addEventListener('focusout', e => {
+  if (e.target.classList && e.target.classList.contains('p-inp-edit'))
+    confirmEdit(e.target.dataset.ns, e.target.dataset.cat, e.target.dataset.id);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.classList.contains('p-inp-edit')) {
+    e.preventDefault();
+    e.target.blur();
+    return;
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute('role') === 'button') {
+    e.preventDefault();
+    e.target.click();
+  }
+});
+
+// ── INIT ─────────────────────────────────────────────────
+document.getElementById('sections').innerHTML = NSS.map(sectionTpl).join('');
+let restored = false;
+NSS.forEach(ns => {
+  renderSrvs(ns);
+  renderHistory(ns);
+  restored = loadDraft(ns) || restored;
+});
+if (restored) toast('Borrador restaurado de la última sesión');
+renderTarifas('cel', 'samsung');
+renderTarifas('pc', 'hw');
+</script>
+</body>
+</html>

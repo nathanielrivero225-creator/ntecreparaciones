@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estrategia Instagram — Ntec Reparaciones</title>
+<style>
+:root {
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #6b6a65;
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f4f0;
+  --color-border-tertiary: #e2e0d8;
+  --border-radius-lg: 12px;
+  --border-radius-md: 8px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--color-background-secondary); color: var(--color-text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 16px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<style>
+  * { box-sizing: border-box; }
+  .sec-label { font-size: 11px; font-weight: 500; letter-spacing: 0.07em; color: var(--color-text-secondary); text-transform: uppercase; margin: 0 0 10px; }
+  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; margin-right: 4px; }
+  .badge-blue { background: #E6F1FB; color: #0B4F8A; }
+  .badge-teal { background: #E1F5EE; color: #085041; }
+  .badge-amber { background: #FAEEDA; color: #633806; }
+  .badge-purple { background: #EEEDFE; color: #3C3489; }
+  .bio-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem 1.25rem; font-size: 14px; line-height: 1.9; color: var(--color-text-primary); white-space: pre-line; }
+  .bio-note { font-size: 12px; color: var(--color-text-secondary); margin-top: 8px; }
+  .divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 1.5rem 0; }
+  .pillar { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .pillar:last-child { border-bottom: none; padding-bottom: 0; }
+  .pillar-icon { width: 36px; height: 36px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+  .pillar-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+  .pillar-desc { font-size: 13px; color: var(--color-text-secondary); margin: 0; line-height: 1.5; }
+  .cal-grid { display: grid; grid-template-columns: 40px repeat(4, 1fr); gap: 6px; align-items: center; }
+  .cal-header { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-align: center; padding: 4px 0; }
+  .cal-week { font-size: 11px; color: var(--color-text-secondary); font-weight: 500; }
+  .cal-cell { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 6px; text-align: center; }
+  .cal-day { font-size: 10px; color: var(--color-text-secondary); margin: 0 0 2px; }
+  .cal-title { font-size: 11px; color: var(--color-text-primary); font-weight: 500; line-height: 1.3; margin: 0 0 3px; }
+  .cal-format { font-size: 10px; color: var(--color-text-secondary); margin: 0; }
+  .cal-empty { padding: 8px 6px; }
+  .script-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 10px; }
+  .script-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .script-num { width: 28px; height: 28px; border-radius: 50%; background: #E6F1FB; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 500; color: #0B4F8A; flex-shrink: 0; }
+  .script-title { font-size: 14px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 2px; }
+  .script-meta { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
+  .script-section { margin-bottom: 10px; }
+  .script-lbl { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 4px; }
+  .script-text { font-size: 13px; color: var(--color-text-primary); line-height: 1.6; margin: 0; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; }
+  .dest-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .dest-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .dest-circle { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 2px solid var(--color-border-tertiary); }
+  .dest-name { font-size: 11px; color: var(--color-text-secondary); text-align: center; line-height: 1.3; }
+  /* STORIES */
+  .stories-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .story { border-radius: 14px; overflow: hidden; aspect-ratio: 9/16; background: #0A0F1E; display: flex; flex-direction: column; justify-content: space-between; padding: 14px 12px 16px; position: relative; border: 0.5px solid rgba(255,255,255,0.08); }
+  .s-logo { font-size: 11px; font-weight: 500; color: rgba(220,230,255,0.4); letter-spacing: 0.02em; }
+  .s-logo span { color: #4A9EFF; }
+  .s-center { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .s-eyebrow { font-size: 8px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: #4A9EFF; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+  .s-eyebrow::before { content: ''; display: block; width: 10px; height: 1px; background: #4A9EFF; opacity: 0.6; }
+  .s-title { font-size: 15px; font-weight: 500; color: #E8F0FF; line-height: 1.15; letter-spacing: -0.3px; }
+  .s-title em { font-style: italic; color: #7DC4FF; font-weight: 400; }
+  .s-sub { font-size: 9px; color: #5A7090; margin-top: 6px; line-height: 1.5; }
+  .s-line { width: 100%; height: 0.5px; background: rgba(255,255,255,0.07); margin: 8px 0; }
+  .s-cta { font-size: 8px; font-weight: 500; color: #0A0F1E; background: #4A9EFF; padding: 4px 9px; border-radius: 100px; white-space: nowrap; display: inline-block; }
+  .s-footer { display: flex; align-items: center; gap: 5px; }
+  .s-dot { width: 5px; height: 5px; border-radius: 50%; background: #4CAF7D; flex-shrink: 0; }
+  .s-online { font-size: 8px; color: #3A5070; }
+  .s-step-num { font-size: 18px; font-weight: 500; color: rgba(74,158,255,0.2); line-height: 1; margin-bottom: 2px; font-style: italic; }
+  .s-step-title { font-size: 10px; font-weight: 500; color: #E8F0FF; }
+  .s-step-body { font-size: 8px; color: #3A5070; margin-top: 1px; line-height: 1.4; }
+  .s-faq-q { font-size: 9px; font-weight: 500; color: #4A9EFF; margin-bottom: 2px; }
+  .s-faq-a { font-size: 8px; color: #5A7090; line-height: 1.4; }
+  .s-price-big { font-size: 20px; font-weight: 500; color: #E8F0FF; line-height: 1; }
+  .s-price-sub { font-size: 8px; color: #3A5070; margin-top: 2px; }
+  .s-plan { font-size: 9px; font-weight: 500; color: #4A9EFF; margin-bottom: 2px; }
+  .s-check { font-size: 8px; color: #4CAF7D; }
+  .s-check-text { font-size: 8px; color: #5A7090; }
+  .s-star { font-size: 9px; color: #4A9EFF; }
+  .s-quote { font-size: 9px; color: #E8F0FF; font-style: italic; line-height: 1.4; }
+  .s-author { font-size: 8px; color: #5A7090; margin-top: 4px; }
+  .s-author strong { color: #E8F0FF; display: block; font-weight: 500; font-style: normal; }
+  .story-label { font-size: 11px; color: var(--color-text-secondary); text-align: center; }
+  .tag { display: inline-block; font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid var(--color-border-tertiary); color: var(--color-text-secondary); margin: 3px 3px 3px 0; }
+  .diff-row { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .diff-row:last-child { border-bottom: none; }
+  .diff-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .diff-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin: 0 0 1px; }
+  .diff-desc { font-size: 12px; color: var(--color-text-secondary); margin: 0; line-height: 1.5; }
+</style>
+
+<h2 class="sr-only">Estrategia completa de Instagram para @ntecreparaciones — servicio técnico de laptops y celulares en Uruguay</h2>
+
+<div style="padding: 1rem 0;">
+
+  <!-- BIO -->
+  <div style="margin-bottom:2rem;">
+    <p class="sec-label">Bio de Instagram — 3 versiones</p>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="badge badge-blue">Opción A — recomendada</span>
+      </div>
+      <div class="bio-box">Reparamos tu laptop y celular 🔧 Uruguay 🇺🇾
+Retiro y entrega a domicilio · Presupuesto gratis
+Mismo día cuando es posible ⚡
+Escribinos 👇</div>
+      <p class="bio-note">El "mismo día" es un diferencial enorme. Si podés cumplirlo aunque sea a veces, ponelo.</p>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="badge badge-teal">Opción B — más detallada</span>
+      </div>
+      <div class="bio-box">Servicio técnico de confianza en Uruguay 🇺🇾
+💻 Laptops · 📱 Celulares · Cualquier marca
+Retiro a domicilio · Sin sorpresas en el precio
+Presupuesto gratis → DM o WhatsApp 👇</div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="badge badge-amber">Opción C — directa y cercana</span>
+      </div>
+      <div class="bio-box">¿Se rompió? Lo arreglamos 🛠️
+Laptops y celulares · Todas las marcas
+📍 Uruguay · Retiro y entrega gratis
+Presupuesto sin compromiso 👇</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- DIFERENCIAL -->
+  <div style="margin-bottom:2rem;">
+    <p class="sec-label">Tu diferencial principal vs la competencia</p>
+    <div class="card">
+      <div class="diff-row">
+        <div class="diff-icon">🏠</div>
+        <div><p class="diff-title">Retiro y entrega a domicilio</p><p class="diff-desc">La mayoría de los técnicos tienen local. Vos vas al cliente. Eso elimina la fricción número uno: el traslado.</p></div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-icon">👤</div>
+        <div><p class="diff-title">Trato directo sin intermediarios</p><p class="diff-desc">Igual que en ntec.uy, hablás y trabajás con la misma persona. Genera mucha más confianza.</p></div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-icon">💬</div>
+        <div><p class="diff-title">Presupuesto gratis antes de arrancar</p><p class="diff-desc">Muchos técnicos cobran solo por mirar. Vos no. Ese detalle solo ya genera más consultas.</p></div>
+      </div>
+      <div class="diff-row">
+        <div class="diff-icon">🔗</div>
+        <div><p class="diff-title">Respaldo de marca ntec</p><p class="diff-desc">Viene de la misma marca que hace webs. Transmite que sos un profesional, no un técnico de garaje.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- PILARES -->
+  <div style="margin-bottom:2rem;">
+    <p class="sec-label">Los 4 pilares de contenido</p>
+    <div class="card">
+      <div class="pillar">
+        <div class="pillar-icon" style="background:#E6F1FB;">🔧</div>
+        <div>
+          <p class="pillar-title">Antes / después de reparaciones reales</p>
+          <p class="pillar-desc">Pantalla rota → pantalla nueva. Laptop lenta → laptop rápida. Fotos del proceso con el resultado. Es el contenido que más genera confianza y consultas.</p>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon" style="background:#E1F5EE;">💡</div>
+        <div>
+          <p class="pillar-title">Tips de cuidado y prevención</p>
+          <p class="pillar-desc">"Por qué se calienta tu laptop", "cómo cuidar la batería del celular", "señales de que el disco duro está por morir". Contenido educativo que posiciona.</p>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon" style="background:#FAEEDA;">📱</div>
+        <div>
+          <p class="pillar-title">Diagnósticos y curiosidades técnicas</p>
+          <p class="pillar-desc">"¿Sabés qué pasa adentro cuando se moja tu celu?" Videos cortos mostrando el interior de dispositivos. Genera mucho engagement.</p>
+        </div>
+      </div>
+      <div class="pillar">
+        <div class="pillar-icon" style="background:#FAECE7;">⭐</div>
+        <div>
+          <p class="pillar-title">Casos reales y testimonios</p>
+          <p class="pillar-desc">Fotos del cliente con el equipo reparado, capturas de WhatsApp con su permiso, reseñas de Google. La prueba social cierra más ventas que cualquier post.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- CALENDARIO -->
+  <div style="margin-bottom:2rem;">
+    <p class="sec-label">Calendario mes 1 — semana a semana</p>
+    <div class="cal-grid">
+      <div></div>
+      <div class="cal-header">Lunes</div>
+      <div class="cal-header">Miércoles</div>
+      <div class="cal-header">Viernes</div>
+      <div class="cal-header">Domingo</div>
+
+      <div class="cal-week">S1</div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">Guión 1: errores que arruinan tu laptop</p><p class="cal-format">Carrusel 6 slides</p></div>
+      <div class="cal-cell"><p class="cal-day">Reel</p><p class="cal-title">Guión 2: pantalla rota → nueva en tiempo real</p><p class="cal-format">Reel 20-30 seg</p></div>
+      <div class="cal-cell"><p class="cal-day">Story</p><p class="cal-title">Detrás de escena: tu kit de herramientas</p><p class="cal-format">3-5 Stories</p></div>
+      <div class="cal-empty"></div>
+
+      <div class="cal-week">S2</div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">Guión 3: cómo cuidar la batería de tu celu</p><p class="cal-format">Carrusel 5 slides</p></div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">Guión 4: señales de que tu laptop está por morir</p><p class="cal-format">Carrusel 6 slides</p></div>
+      <div class="cal-cell"><p class="cal-day">Story</p><p class="cal-title">Poll: ¿laptop o celular te da más problemas?</p><p class="cal-format">Story interactiva</p></div>
+      <div class="cal-cell"><p class="cal-day">Reel</p><p class="cal-title">Interior de un celu mojado: esto le pasa</p><p class="cal-format">Reel 30 seg</p></div>
+
+      <div class="cal-week">S3</div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">Antes/después: laptop lenta → rápida</p><p class="cal-format">Fotos + carrusel</p></div>
+      <div class="cal-cell"><p class="cal-day">Reel</p><p class="cal-title">Guión 5: ¿vale la pena reparar o comprar nuevo?</p><p class="cal-format">Reel 30-45 seg</p></div>
+      <div class="cal-cell"><p class="cal-day">Story</p><p class="cal-title">Testimonio de cliente real</p><p class="cal-format">Story + destacado</p></div>
+      <div class="cal-empty"></div>
+
+      <div class="cal-week">S4</div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">5 mitos sobre reparaciones (que cuestan caro creer)</p><p class="cal-format">Carrusel educativo</p></div>
+      <div class="cal-cell"><p class="cal-day">Post</p><p class="cal-title">Servicios y cómo funciona el retiro a domicilio</p><p class="cal-format">Carrusel informativo</p></div>
+      <div class="cal-cell"><p class="cal-day">Reel</p><p class="cal-title">Caso real: celular caído al agua recuperado</p><p class="cal-format">Reel documental</p></div>
+      <div class="cal-cell"><p class="cal-day">Story</p><p class="cal-title">CTA: presupuesto gratis esta semana</p><p class="cal-format">Story con link</p></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- GUIONES -->
+  <p class="sec-label">Los 5 guiones</p>
+
+  <div class="script-card">
+    <div class="script-header">
+      <div class="script-num">1</div>
+      <div>
+        <p class="script-title">5 errores que están arruinando tu laptop sin que lo sepas</p>
+        <p class="script-meta">Carrusel · 6 slides · Semana 1, lunes</p>
+      </div>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 1 — portada</p>
+      <p class="script-text">"5 errores que están arruinando tu laptop sin que lo sepas (y cómo evitarlos antes de que sea tarde)"</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slides 2–5 — errores</p>
+      <p class="script-text">Error 1: Tapar las ventilaciones → usarla en la cama o la almohada la sobrecalienta y mata el hardware en meses.
+Error 2: Nunca limpiarla por dentro → el polvo acumulado es el enemigo número uno. Una vez por año mínimo.
+Error 3: Cargarla al 100% siempre → la batería de litio dura más entre 20% y 80%. El 100% constante la degrada.
+Error 4: Ignorar las actualizaciones → no son solo estéticas. Parchean vulnerabilidades que usan los virus.
+Error 5: Forzar el apagado tirando de la batería → si se colgó, esperá. Si no hay opción, una vez está bien. Hacerlo seguido arruina el disco.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 6 — CTA</p>
+      <p class="script-text">"¿Tu laptop tiene alguno de estos problemas? Escribinos, te hacemos un diagnóstico gratis. Retiro a domicilio en Montevideo 🔧"</p>
+    </div>
+  </div>
+
+  <div class="script-card">
+    <div class="script-header">
+      <div class="script-num">2</div>
+      <div>
+        <p class="script-title">Cambio de pantalla en tiempo real</p>
+        <p class="script-meta">Reel · 20–30 seg · Semana 1, miércoles</p>
+      </div>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 0–3 — gancho</p>
+      <p class="script-text">Mostrar la pantalla rota de frente. Texto: "Esto llegó hoy." Sin narración, música de fondo.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 3–22 — proceso</p>
+      <p class="script-text">Timelapse del proceso de cambio: desmontaje, pantalla nueva, montaje. Texto en pantalla: "2 horas después..." → mostrar resultado final.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 22–30 — CTA</p>
+      <p class="script-text">Pantalla encendida perfecta. Texto: "¿La tuya también está rota? DM para presupuesto gratis. Retiramos en tu domicilio." Logo ntecreparaciones.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Caption</p>
+      <p class="script-text">Pantalla rota no significa celu nuevo. En la mayoría de los casos se repara por mucho menos. ¿La tuya? Escribinos 👇 #reparacioncelular #uruguay #serviciostecnicos</p>
+    </div>
+  </div>
+
+  <div class="script-card">
+    <div class="script-header">
+      <div class="script-num">3</div>
+      <div>
+        <p class="script-title">Cómo cuidar la batería de tu celular y que dure el doble</p>
+        <p class="script-meta">Carrusel · 5 slides · Semana 2, lunes</p>
+      </div>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 1 — portada</p>
+      <p class="script-text">"Tu batería dura menos de lo que debería. Esto es lo que estás haciendo mal."</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slides 2–4 — tips</p>
+      <p class="script-text">Tip 1: No la cargues al 100% ni la dejes llegar a 0% → mantené entre 20% y 80% para maximizar ciclos de vida.
+Tip 2: Evitá cargar con el celu caliente → el calor destruye el litio. Sacale la funda mientras carga si se calienta.
+Tip 3: El cargador original importa → los genéricos baratos no regulan bien la corriente y degradan la batería en semanas.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 5 — CTA</p>
+      <p class="script-text">"¿Tu batería ya está dañada? La cambiamos. Presupuesto gratis, retiro a domicilio. Guardá este post para después 👇"</p>
+    </div>
+  </div>
+
+  <div class="script-card">
+    <div class="script-header">
+      <div class="script-num">4</div>
+      <div>
+        <p class="script-title">7 señales de que tu laptop está por morir</p>
+        <p class="script-meta">Carrusel · 6 slides · Semana 2, miércoles</p>
+      </div>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 1 — portada gancho</p>
+      <p class="script-text">"7 señales de que tu laptop está por morir (y cómo salvarla antes de perder todo)"</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slides 2–6 — señales</p>
+      <p class="script-text">1. Se calienta mucho aunque no hagas nada pesado → ventilador o pasta térmica.
+2. Tarda 10+ minutos en encender → disco duro a punto de fallar.
+3. Hace ruidos raros (click, chirrido) → disco mecánico dañado. Hacé backup YA.
+4. La batería dura 20 minutos → necesita reemplazo urgente.
+5. Se apaga sola de repente → sobrecalentamiento o fuente.
+6. Pantalla con líneas o parpadea → falla de placa o cable de video.
+7. Teclado o puertos que no responden → suciedad o daño en la placa.</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Slide 6 — CTA</p>
+      <p class="script-text">"¿Tiene alguna de estas señales? No esperes a que se muera. Diagnóstico gratis. Retiramos en tu domicilio en Montevideo 🔧"</p>
+    </div>
+  </div>
+
+  <div class="script-card">
+    <div class="script-header">
+      <div class="script-num">5</div>
+      <div>
+        <p class="script-title">¿Vale la pena reparar o conviene comprar nuevo?</p>
+        <p class="script-meta">Reel con texto en pantalla · 30–45 seg · Semana 3, miércoles</p>
+      </div>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 0–5 — gancho</p>
+      <p class="script-text">Texto en pantalla: "¿Tu celu o laptop se rompió? Antes de gastar en uno nuevo, leé esto."</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 5–30 — desarrollo</p>
+      <p class="script-text">"En la mayoría de los casos, reparar sale entre 3 y 10 veces más barato que comprar nuevo. Pantalla rota: $800–$2.000. Celular nuevo: $15.000+. Batería agotada: $600–$1.200. Laptop lenta por disco: $1.500. Laptop nueva: $20.000+. La reparación tiene sentido cuando el equipo no tiene más de 4–5 años y el problema está diagnosticado."</p>
+    </div>
+    <div class="script-section">
+      <p class="script-lbl">Segundos 30–45 — CTA</p>
+      <p class="script-text">"¿No sabés si vale reparar el tuyo? Escribinos, te damos una opinión honesta gratis. Si no vale la pena, te lo decimos." Logo + @ntecreparaciones.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- DESTACADOS -->
+  <div style="margin-bottom:1.5rem;">
+    <p class="sec-label">Destacados del perfil</p>
+    <div class="dest-grid">
+      <div class="dest-wrap"><div class="dest-circle" style="background:#E6F1FB;">🔧</div><span class="dest-name">Servicios</span></div>
+      <div class="dest-wrap"><div class="dest-circle" style="background:#E1F5EE;">💰</div><span class="dest-name">Precios</span></div>
+      <div class="dest-wrap"><div class="dest-circle" style="background:#FAEEDA;">⭐</div><span class="dest-name">Reseñas</span></div>
+      <div class="dest-wrap"><div class="dest-circle" style="background:#FAECE7;">📦</div><span class="dest-name">Cómo funciona</span></div>
+      <div class="dest-wrap"><div class="dest-circle" style="background:#EDF7ED;">❓</div><span class="dest-name">FAQ</span></div>
+    </div>
+  </div>
+
+  <!-- PORTADAS STORIES -->
+  <p class="sec-label">Portadas de los destacados</p>
+  <div class="stories-grid">
+
+    <div class="dest-wrap">
+      <div class="story">
+        <div class="s-logo">N<span>.</span>TEC</div>
+        <div class="s-center">
+          <div class="s-eyebrow">Qué reparamos</div>
+          <div class="s-title">Laptops<br>y <em>celulares</em></div>
+          <div class="s-line"></div>
+          <div class="s-sub">Todas las marcas · Cualquier falla<br>Diagnóstico siempre gratis</div>
+        </div>
+        <div class="s-footer"><div class="s-cta">Ver servicios</div><div style="flex:1"></div><div class="s-dot"></div><div class="s-online">Uruguay</div></div>
+      </div>
+      <p class="story-label">Servicios</p>
+    </div>
+
+    <div class="dest-wrap">
+      <div class="story">
+        <div class="s-logo">N<span>.</span>TEC</div>
+        <div class="s-center">
+          <div class="s-eyebrow">Precios reales</div>
+          <div class="s-title">Sin sorpresas<br><em>en el precio</em></div>
+          <div class="s-line"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div><div class="s-plan">Pantalla celular</div><div class="s-price-big" style="font-size:16px;">desde $800</div></div>
+            <div class="s-line" style="margin:0;"></div>
+            <div><div class="s-plan">Batería</div><div class="s-price-big" style="font-size:16px;">desde $600</div></div>
+            <div class="s-line" style="margin:0;"></div>
+            <div><div class="s-plan">Laptop lenta</div><div class="s-price-big" style="font-size:16px;">desde $1.500</div></div>
+          </div>
+          <div style="margin-top:8px;display:flex;align-items:center;gap:4px;"><span class="s-check">✓</span><span class="s-check-text"> Presupuesto gratis siempre</span></div>
+        </div>
+        <div class="s-footer"><div class="s-cta">Consultar</div></div>
+      </div>
+      <p class="story-label">Precios</p>
+    </div>
+
+    <div class="dest-wrap">
+      <div class="story">
+        <div class="s-logo">N<span>.</span>TEC</div>
+        <div class="s-center">
+          <div class="s-eyebrow">Clientes reales</div>
+          <div class="s-title">Lo que dicen<br><em>de nosotros</em></div>
+          <div class="s-line"></div>
+          <div style="display:flex;gap:2px;margin-bottom:5px;"><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span></div>
+          <div class="s-quote">"Rápido, honesto y buen precio. Lo recomiendo."</div>
+          <div class="s-author"><strong>Cliente verificado</strong>Montevideo</div>
+          <div class="s-line"></div>
+          <div style="display:flex;gap:2px;margin-bottom:5px;"><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span><span class="s-star">★</span></div>
+          <div class="s-quote">"Me retiraron el celu y en 2 días lo tenía de vuelta."</div>
+          <div class="s-author"><strong>Cliente verificado</strong>Uruguay</div>
+        </div>
+        <div class="s-footer"><div class="s-cta">Ver más</div></div>
+      </div>
+      <p class="story-label">Reseñas</p>
+    </div>
+
+    <div class="dest-wrap">
+      <div class="story">
+        <div class="s-logo">N<span>.</span>TEC</div>
+        <div class="s-center">
+          <div class="s-eyebrow">Cómo funciona</div>
+          <div class="s-title">Simple y<br><em>sin vueltas</em></div>
+          <div class="s-line"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">
+            <div><div class="s-step-num">01</div><div class="s-step-title">Nos escribís</div><div class="s-step-body">Contanos qué pasó. Diagnóstico gratis.</div></div>
+            <div><div class="s-step-num">02</div><div class="s-step-title">Retiramos</div><div class="s-step-body">Vamos a tu domicilio a buscar el equipo.</div></div>
+            <div><div class="s-step-num">03</div><div class="s-step-title">Reparamos</div><div class="s-step-body">Te avisamos cuando está listo.</div></div>
+            <div><div class="s-step-num">04</div><div class="s-step-title">Entregamos</div><div class="s-step-body">Te lo devolvemos en tu casa.</div></div>
+          </div>
+        </div>
+        <div class="s-footer"><div class="s-cta">Empezar</div></div>
+      </div>
+      <p class="story-label">Cómo funciona</p>
+    </div>
+
+    <div class="dest-wrap">
+      <div class="story">
+        <div class="s-logo">N<span>.</span>TEC</div>
+        <div class="s-center">
+          <div class="s-eyebrow">Preguntas</div>
+          <div class="s-title">Todo lo<br><em>que querés saber</em></div>
+          <div class="s-line"></div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div><div class="s-faq-q">¿El diagnóstico tiene costo?</div><div class="s-faq-a">No. Siempre gratis, sin compromiso.</div></div>
+            <div class="s-line" style="margin:0;"></div>
+            <div><div class="s-faq-q">¿Trabajan a domicilio?</div><div class="s-faq-a">Sí. Retiramos y entregamos en tu casa.</div></div>
+            <div class="s-line" style="margin:0;"></div>
+            <div><div class="s-faq-q">¿Qué marcas reparan?</div><div class="s-faq-a">Todas. Samsung, iPhone, Lenovo, HP, etc.</div></div>
+            <div class="s-line" style="margin:0;"></div>
+            <div><div class="s-faq-q">¿Cuánto tarda?</div><div class="s-faq-a">Depende de la falla. Te avisamos antes.</div></div>
+          </div>
+        </div>
+        <div class="s-footer"><div class="s-cta">Más preguntas</div></div>
+      </div>
+      <p class="story-label">FAQ</p>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- HASHTAGS -->
+  <p class="sec-label">Hashtags para Uruguay</p>
+  <div class="card">
+    <span class="tag">#reparacioncelular</span>
+    <span class="tag">#reparacionlaptop</span>
+    <span class="tag">#serviciostecnicos</span>
+    <span class="tag">#tecnicouruguay</span>
+    <span class="tag">#reparacionuruguay</span>
+    <span class="tag">#montevideo</span>
+    <span class="tag">#uruguay</span>
+    <span class="tag">#celularroto</span>
+    <span class="tag">#pantallaaota</span>
+    <span class="tag">#servicioinformatico</span>
+    <span class="tag">#emprendimientosuy</span>
+    <span class="tag">#tecnologiauruguay</span>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

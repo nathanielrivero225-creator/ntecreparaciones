@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ideas de Posts — @ntecreparaciones</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07090F;
+    --bg2: #0D1220;
+    --bg3: #111826;
+    --blue: #4A9EFF;
+    --blue2: #7DC4FF;
+    --green: #4CAF7D;
+    --amber: #D4A853;
+    --red: #E05C5C;
+    --text: #E8F0FF;
+    --text2: #6A8BAA;
+    --text3: #2A3D55;
+    --border: rgba(74,158,255,0.1);
+    --sans: 'DM Sans', sans-serif;
+    --serif: 'DM Serif Display', Georgia, serif;
+  }
+  body { background: var(--bg); font-family: var(--sans); color: var(--text); min-height: 100vh; padding: 40px 24px; -webkit-font-smoothing: antialiased; }
+
+  .header { text-align: center; margin-bottom: 48px; }
+  .header-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 12px; }
+  .header-title { font-family: var(--serif); font-size: 36px; color: var(--text); line-height: 1.1; margin-bottom: 8px; }
+  .header-title em { font-style: italic; color: var(--blue2); }
+  .header-sub { font-size: 14px; color: var(--text2); }
+
+  /* Filter tabs */
+  .filters { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+  .filter-btn { font-size: 12px; font-weight: 500; padding: 7px 16px; border-radius: 100px; border: 1px solid var(--border); background: transparent; color: var(--text2); cursor: pointer; transition: all 0.2s; font-family: var(--sans); }
+  .filter-btn:hover, .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #07090F; }
+
+  /* Grid */
+  .posts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; max-width: 1100px; margin: 0 auto; }
+
+  .post-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; position: relative; transition: transform 0.2s, border-color 0.2s; cursor: default; }
+  .post-card:hover { transform: translateY(-2px); border-color: rgba(74,158,255,0.25); }
+
+  .post-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
+  .post-num { font-family: var(--serif); font-size: 28px; color: var(--text3); line-height: 1; font-style: italic; flex-shrink: 0; }
+  .post-badges { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 100px; }
+  .badge-reel { background: rgba(224,92,92,0.15); color: #E05C5C; border: 1px solid rgba(224,92,92,0.2); }
+  .badge-carrusel { background: rgba(74,158,255,0.12); color: var(--blue); border: 1px solid rgba(74,158,255,0.2); }
+  .badge-post { background: rgba(212,168,83,0.12); color: var(--amber); border: 1px solid rgba(212,168,83,0.2); }
+  .badge-story { background: rgba(76,175,125,0.12); color: var(--green); border: 1px solid rgba(76,175,125,0.2); }
+
+  .post-type-icon { font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 100px; }
+  .cat-educativo { background: rgba(74,158,255,0.08); color: var(--blue2); border: 1px solid rgba(74,158,255,0.15); }
+  .cat-ventas { background: rgba(76,175,125,0.08); color: var(--green); border: 1px solid rgba(76,175,125,0.15); }
+  .cat-viral { background: rgba(224,92,92,0.08); color: #E05C5C; border: 1px solid rgba(224,92,92,0.15); }
+  .cat-confianza { background: rgba(212,168,83,0.08); color: var(--amber); border: 1px solid rgba(212,168,83,0.15); }
+
+  .post-title { font-size: 15px; font-weight: 500; color: var(--text); line-height: 1.35; margin-bottom: 8px; }
+  .post-hook { font-size: 12px; color: var(--text2); line-height: 1.6; margin-bottom: 10px; background: var(--bg3); border-radius: 8px; padding: 8px 10px; border-left: 2px solid var(--blue); }
+  .post-hook-label { font-size: 10px; color: var(--text3); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 3px; }
+  .post-caption { font-size: 11px; color: var(--text3); margin-top: 8px; line-height: 1.5; }
+  .post-caption span { color: var(--blue); }
+
+  .post-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .post-effort { font-size: 10px; color: var(--text3); display: flex; align-items: center; gap: 4px; }
+  .effort-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .effort-facil { background: var(--green); }
+  .effort-medio { background: var(--amber); }
+  .effort-dificil { background: var(--red); }
+  .post-week { font-size: 10px; color: var(--text3); }
+
+  .hidden { display: none; }
+
+  .stats-bar { display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-family: var(--serif); font-size: 28px; color: var(--text); }
+  .stat-num em { font-style: italic; color: var(--blue2); }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <p class="header-eyebrow">@ntecreparaciones · Instagram</p>
+  <h1 class="header-title">30 ideas de <em>posts</em></h1>
+  <p class="header-sub">Banco de contenido listo para publicar · El Pinar, Ciudad de la Costa</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">12</div><div class="stat-label">Reels</div></div>
+  <div class="stat"><div class="stat-num">10</div><div class="stat-label">Carruseles</div></div>
+  <div class="stat"><div class="stat-num">8</div><div class="stat-label">Posts / Stories</div></div>
+  <div class="stat"><div class="stat-num"><em>~10</em></div><div class="stat-label">semanas de contenido</div></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="filterPosts('all', this)">Todos (30)</button>
+  <button class="filter-btn" onclick="filterPosts('educativo', this)">📚 Educativo</button>
+  <button class="filter-btn" onclick="filterPosts('ventas', this)">💰 Ventas</button>
+  <button class="filter-btn" onclick="filterPosts('viral', this)">🔥 Viral</button>
+  <button class="filter-btn" onclick="filterPosts('confianza', this)">⭐ Confianza</button>
+  <button class="filter-btn" onclick="filterPosts('reel', this)">🎬 Solo Reels</button>
+  <button class="filter-btn" onclick="filterPosts('carrusel', this)">📎 Solo Carruseles</button>
+</div>
+
+<div class="posts-grid" id="grid">
+
+  <!-- EDUCATIVOS -->
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">01</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">5 errores que están matando tu laptop sin que lo sepas</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"¿Usás la laptop en la cama? Estás acortando su vida a la mitad."</div>
+    <p class="post-caption">Errores: tapar ventilación, nunca limpiar, cargar al 100%, ignorar actualizaciones, forzar apagado. Slide final: CTA diagnóstico gratis.<br><span>#laptop #uruguay #tecnologia #reparacionuruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 1</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">02</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">7 señales de que tu celular necesita una batería nueva ya</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Si tu celu no llega al mediodía con carga, esto es lo que está pasando."</div>
+    <p class="post-caption">Señales: dura poco, se apaga al 20%, se calienta al cargar, carga lento, se hincha. Tip: no esperes a que explote.<br><span>#bateria #celular #samsung #iphone #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 1</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">03</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">Qué pasa adentro de un celular mojado (y cómo salvarlo)</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Se cayó al agua. Esto le pasa por dentro en los primeros 10 minutos."</div>
+    <p class="post-caption">Mostrar placa con corrosión. Narrar pasos para salvar el equipo: apagar, no cargar, traer al técnico. NO arroz.<br><span>#celularmojado #uruguay #reparacion #tip</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 2</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">04</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">Cómo cuidar la batería de tu celular para que dure el doble</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"El 80% de la gente carga mal el celu. Acá el método correcto."</div>
+    <p class="post-caption">Tips: mantener entre 20-80%, evitar calor, cargador original, no cargues de noche toda la noche.<br><span>#bateria #cuidados #celular #tecnologia</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 2</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">05</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">Por qué tu laptop se calienta tanto (y qué hacer)</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"¿Podés freír un huevo en tu laptop? Esto es lo que está pasando."</div>
+    <p class="post-caption">Causas: polvo en ventilador, pasta térmica seca, mal apoyo. Mostrar ventilador tapado vs limpio. CTA: limpieza interna.<br><span>#laptop #calor #reparacion #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 3</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">06</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">¿Tu laptop hace un ruido raro? Lo que significa cada sonido</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Cada ruido que hace tu laptop te está diciendo algo. Traducción acá."</div>
+    <p class="post-caption">Click = disco a punto de morir → backup YA. Chirrido = ventilador. Beep al arrancar = RAM o placa. Zumbido = disco mecánico.<br><span>#laptop #ruido #disco #datos</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 3</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">07</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">La diferencia entre SSD y HDD explicada en 30 segundos</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"¿Tu laptop tarda 10 minutos en abrir? Este video te explica por qué."</div>
+    <p class="post-caption">Comparativa visual SSD vs HDD. Velocidad de arranque. Cuánto cuesta cambiar. Por qué vale la pena.<br><span>#ssd #laptop #lenta #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 4</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">08</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">5 cosas que no sabías que podés hacer con tu cargador roto</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Antes de tirar el cargador roto, leé esto."</div>
+    <p class="post-caption">Tips: cable vs adaptador, carga reversible, daño por cargadores genéricos, señales de cargador dañado, cuándo cambiarlo sí o sí.<br><span>#cargador #celular #tip #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 5</div></div>
+  </div>
+
+  <!-- VIRALES -->
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">09</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Antes / después: pantalla rota → nueva en tiempo real</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Esto llegó así. 2 horas después..."</div>
+    <p class="post-caption">Mostrar pantalla rota → timelapse del proceso → resultado final impecable. Sin narración, solo música. CTA: DM para presupuesto.<br><span>#pantalla #reparacion #celular #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 1</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">10</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">¿Vale la pena reparar o comprás uno nuevo? La respuesta honesta</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Te voy a decir algo que ningún técnico te dice: a veces no vale reparar."</div>
+    <p class="post-caption">Comparativa de precios real: pantalla $800-2000 vs celu nuevo $15.000+. Batería $600 vs celu nuevo. Cuándo SÍ conviene reparar.<br><span>#reparar #nuevo #ahorro #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Texto en pantalla</div><div class="post-week">Semana 2</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">11</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Abrimos una laptop que "no enciende" y esto encontramos adentro</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"El dueño dijo que se había caído al agua 3 años atrás. Esto encontramos."</div>
+    <p class="post-caption">Mostrar el interior con corrosión, polvo, daño. Narrar qué falló y cómo se reparó. Resultado: laptop encendida.<br><span>#laptop #adentro #reparacion #sorpresa</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 3</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">12</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Rescatamos datos de un disco que "estaba muerto"</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Dijeron que había perdido 5 años de fotos para siempre. Lo que pasó después..."</div>
+    <p class="post-caption">Mostrar proceso de recuperación. Fotos recuperadas en pantalla. Reacción del cliente por WhatsApp.<br><span>#datos #recuperacion #fotos #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere caso real</div><div class="post-week">Semana 4</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">13</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Limpieza interna de laptop: lo que sale adentro te va a sorprender</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"3 años sin limpiar. Esto es lo que había adentro."</div>
+    <p class="post-caption">Mostrar polvo, suciedad. Proceso de limpieza. Comparativa de temperatura antes y después. Asmr + música.<br><span>#limpieza #laptop #asmr #satisfactorio</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 5</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">14</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Celular caído al agua: lo que NUNCA hay que hacer</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Guardaste el celu en arroz, ¿no? Mal. Esto tenías que hacer."</div>
+    <p class="post-caption">Mitos vs realidad: arroz NO funciona. Lo que daña más: encenderlo, cargarlo, soplarlo. Lo correcto: apagar, traer urgente.<br><span>#agua #celular #mito #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Texto en pantalla</div><div class="post-week">Semana 6</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">15</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">Antes/después: laptop que tardaba 15 min en encender → 40 segundos</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Grabé el antes. Grabé el después. La diferencia habla sola."</div>
+    <p class="post-caption">Video splitscreen: arranque lento vs arranque con SSD. Cuánto costó el upgrade. Resultado del cliente.<br><span>#ssd #laptop #rapida #upgrade</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 7</div></div>
+  </div>
+
+  <!-- VENTAS -->
+  <div class="post-card" data-cat="ventas" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">16</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-ventas">Ventas</span></div>
+    </div>
+    <div class="post-title">Servicios y precios: todo lo que reparamos en ntec</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Precios claros, sin sorpresas. Acá todo lo que hacemos."</div>
+    <p class="post-caption">Pantallas, baterías, teclados, cargadores, SSD, limpieza, recuperación de datos. Rangos de precio orientativos. CTA: presupuesto gratis por DM.<br><span>#precios #reparacion #uruguay #serviciostecnicos</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 1</div></div>
+  </div>
+
+  <div class="post-card" data-cat="ventas" data-format="post">
+    <div class="post-header">
+      <div class="post-num">17</div>
+      <div class="post-badges"><span class="badge badge-post">Post</span><span class="badge post-type-icon cat-ventas">Ventas</span></div>
+    </div>
+    <div class="post-title">Cómo funciona el retiro a domicilio: paso a paso</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"No tenés que moverte. Nosotros vamos a El Pinar y Ciudad de la Costa."</div>
+    <p class="post-caption">Infografía simple: escribís → coordinamos → retiramos → reparamos → entregamos. Diferencial vs locales físicos.<br><span>#domicilio #elpinar #ciudaddelacosta #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 2</div></div>
+  </div>
+
+  <div class="post-card" data-cat="ventas" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">18</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-ventas">Ventas</span></div>
+    </div>
+    <div class="post-title">Hacemos el retiro en tu casa: así funciona</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"¿Sabías que podés reparar tu celu sin salir de tu casa en El Pinar?"</div>
+    <p class="post-caption">Mostrar proceso: DM → coordinar → ir a buscar el equipo → devolverlo listo. Casual y cercano, no producción.<br><span>#elpinar #ciudaddelacosta #domicilio #servicio</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere grabación</div><div class="post-week">Semana 3</div></div>
+  </div>
+
+  <div class="post-card" data-cat="ventas" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">19</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-ventas">Ventas</span></div>
+    </div>
+    <div class="post-title">Cuánto cuesta reparar vs comprar nuevo en Uruguay (comparativa real)</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Antes de gastar $20.000 en una laptop nueva, leé esto."</div>
+    <p class="post-caption">Tabla comparativa: problema + costo reparación + precio equipo nuevo + ahorro. Pantalla, batería, SSD, teclado.<br><span>#ahorro #reparacion #laptop #celular</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 4</div></div>
+  </div>
+
+  <div class="post-card" data-cat="ventas" data-format="story">
+    <div class="post-header">
+      <div class="post-num">20</div>
+      <div class="post-badges"><span class="badge badge-story">Story</span><span class="badge post-type-icon cat-ventas">Ventas</span></div>
+    </div>
+    <div class="post-title">Poll semanal: ¿laptop o celular te da más problemas?</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Votá y te mandamos tips para el que elijas 👇"</div>
+    <p class="post-caption">Story interactiva con encuesta. Usar resultado para crear contenido de la semana siguiente. Respondé a cada voto.<br><span>Story solo — no necesita hashtags</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>1 minuto de trabajo</div><div class="post-week">Cada semana</div></div>
+  </div>
+
+  <!-- CONFIANZA -->
+  <div class="post-card" data-cat="confianza" data-format="post">
+    <div class="post-header">
+      <div class="post-num">21</div>
+      <div class="post-badges"><span class="badge badge-post">Post</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Testimonio real: "Pensé que había perdido todas mis fotos"</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Disco duro muerto. 4 años de fotos. Esto fue lo que pasó."</div>
+    <p class="post-caption">Foto del cliente (con permiso) o captura de WhatsApp. Historia del caso + resultado. Humaniza la marca.<br><span>#testimonio #cliente #recuperacion #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Necesitás un caso real</div><div class="post-week">Semana 2</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">22</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Por qué no tengo local y eso es una ventaja para vos</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Sin local. Sin empleados. Sin intermediarios. Así se hace mejor servicio técnico."</div>
+    <p class="post-caption">Explicar que sin gastos fijos, los precios son menores. Trato directo. Retiro a domicilio. Flexibilidad horaria.<br><span>#servicio #precio #domicilio #diferente</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Texto en pantalla</div><div class="post-week">Semana 3</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">23</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">5 mitos sobre reparaciones que te hacen gastar más</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"El arroz salva celuares mojados." FALSO. Acá la verdad."</div>
+    <p class="post-caption">Mitos: arroz para agua, técnico barato = malo, mejor llevar al oficial, los datos se pierden siempre, no tiene arreglo.<br><span>#mitos #reparacion #verdad #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 4</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="post">
+    <div class="post-header">
+      <div class="post-num">24</div>
+      <div class="post-badges"><span class="badge badge-post">Post</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Por qué el presupuesto es siempre gratis (y sin compromiso)</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Muchos técnicos cobran solo por mirar. Nosotros no. Este es el motivo."</div>
+    <p class="post-caption">Explicar filosofía: si no sabés cuánto sale, no podés decidir. Transparencia genera confianza y más clientes a largo plazo.<br><span>#presupuesto #gratis #confianza #tecnico</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 5</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">25</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Garantía en reparaciones: qué cubre y por cuánto tiempo</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"¿Qué pasa si algo falla después de la reparación? Te explico."</div>
+    <p class="post-caption">Explicar garantía en mano de obra y repuestos. Qué cubre y qué no. Cómo reclamarlo. Diferencial vs técnicos informales.<br><span>#garantia #reparacion #confianza #uruguay</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Texto en pantalla</div><div class="post-week">Semana 6</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="post">
+    <div class="post-header">
+      <div class="post-num">26</div>
+      <div class="post-badges"><span class="badge badge-post">Post</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Presentación: quién está detrás de ntecreparaciones</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Soy Nathaniel. Esto es lo que hago y por qué lo hago."</div>
+    <p class="post-caption">Foto tuya. Historia breve: de dónde venís, por qué montaste el servicio, qué te motiva. Vincular con ntec.uy. Humaniza la marca totalmente.<br><span>#presentacion #emprendedor #uruguay #tecnico</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Solo una foto tuya</div><div class="post-week">Semana 1 — importante</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="story">
+    <div class="post-header">
+      <div class="post-num">27</div>
+      <div class="post-badges"><span class="badge badge-story">Story</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Captura de WhatsApp de cliente satisfecho</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Cuando el cliente manda esto, el trabajo valió la pena."</div>
+    <p class="post-caption">Captura real (con permiso) de mensaje positivo de cliente. Rápido de hacer, altísimo impacto. Guardarlo en destacado Reseñas.<br><span>Story solo — guardar en destacado</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>1 minuto de trabajo</div><div class="post-week">Cada vez que tengas uno</div></div>
+  </div>
+
+  <div class="post-card" data-cat="confianza" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">28</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-confianza">Confianza</span></div>
+    </div>
+    <div class="post-title">Qué pasa con tus datos cuando dejás el equipo para reparar</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"La pregunta que todos hacen y pocos técnicos responden con honestidad."</div>
+    <p class="post-caption">Explicar: qué se toca y qué no, por qué es necesario acceder en algunos casos, recomendación de backup previo, política de privacidad.<br><span>#datos #privacidad #confianza #tecnico</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 7</div></div>
+  </div>
+
+  <div class="post-card" data-cat="viral" data-format="reel">
+    <div class="post-header">
+      <div class="post-num">29</div>
+      <div class="post-badges"><span class="badge badge-reel">Reel</span><span class="badge post-type-icon cat-viral">Viral</span></div>
+    </div>
+    <div class="post-title">El iPhone más roto que nos llegó este mes</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Nos llegó así. El cliente dijo 'ya lo descartamos'. Spoiler: lo salvamos."</div>
+    <p class="post-caption">Mostrar el equipo en mal estado → proceso → resultado. Cuanto más dramático el antes, mejor el impacto. Pedir permiso al cliente.<br><span>#iphone #roto #reparacion #sorpresa</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-medio"></div>Requiere caso real</div><div class="post-week">Semana 8</div></div>
+  </div>
+
+  <div class="post-card" data-cat="educativo" data-format="carrusel">
+    <div class="post-header">
+      <div class="post-num">30</div>
+      <div class="post-badges"><span class="badge badge-carrusel">Carrusel</span><span class="badge post-type-icon cat-educativo">Educativo</span></div>
+    </div>
+    <div class="post-title">Guía para hacer backup de tu celu antes de llevarlo al técnico</div>
+    <div class="post-hook"><div class="post-hook-label">Gancho</div>"Siempre hacé esto antes de dejar tu celu en cualquier servicio técnico."</div>
+    <p class="post-caption">Pasos: Google Fotos, iCloud/iTunes, contactos, WhatsApp. Checklist visual simple. Guardable para después.<br><span>#backup #seguridad #celu #tip</span></p>
+    <div class="post-footer"><div class="post-effort"><div class="effort-dot effort-facil"></div>Fácil de hacer</div><div class="post-week">Semana 9</div></div>
+  </div>
+
+</div>
+
+<script>
+function filterPosts(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const cards = document.querySelectorAll('.post-card');
+  cards.forEach(card => {
+    if (cat === 'all') {
+      card.classList.remove('hidden');
+    } else if (cat === 'reel') {
+      card.classList.toggle('hidden', card.dataset.format !== 'reel');
+    } else if (cat === 'carrusel') {
+      card.classList.toggle('hidden', card.dataset.format !== 'carrusel');
+    } else {
+      card.classList.toggle('hidden', card.dataset.cat !== cat);
+    }
+  });
+}
+</script>
+</body>
+</html>
