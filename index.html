@@ -6,20 +6,8 @@
 <meta name="description" content="Calculadora de presupuestos para reparación de celulares y PC/Laptops — Ntec Reparaciones, Uruguay.">
 <title>Ntec — Calculadora de Presupuestos</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text x='0' y='13' font-size='13'>🔧</text></svg>">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="shared.css">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:#f5f4f0; --surface:#fff; --surface-2:#f9f8f5;
-  --border:#e2e0d8; --border-strong:#c8c5bb;
-  --text:#1a1a18; --text-muted:#6b6a65; --text-hint:#9e9c96;
-  --accent:#1a6fd4; --accent-bg:#e8f1fc; --accent-text:#1050a0;
-  --success:#1a7a4a; --success-bg:#e6f5ed;
-  --warning:#8a5c00; --warning-bg:#fef3d8;
-  --danger:#c0392b; --radius:8px;
-  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
-}
-body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px 16px; font-size:14px; line-height:1.5; }
 
 .app-header { max-width:980px; margin:0 auto 20px; display:flex; align-items:center; justify-content:space-between; }
 .logo { font-size:20px; font-weight:700; letter-spacing:-.5px; }
@@ -163,10 +151,6 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 .g-alta { background:#fde8e8; color:#c0392b; }
 
 /* TOAST */
-#toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%,16px); background:#1a1a18; color:#fff; padding:10px 18px; border-radius:10px; font-size:13px; font-weight:500; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:999; box-shadow:0 6px 20px rgba(0,0,0,.25); max-width:90vw; text-align:center; }
-#toast.show { opacity:1; transform:translate(-50%,0); }
-#toast.err { background:var(--danger); }
-button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 #sections .tarifas-section:last-of-type { margin-bottom:48px; }
 </style>
 </head>
@@ -211,11 +195,9 @@ button:focus-visible, [role="button"]:focus-visible { outline:2px solid var(--ac
 
 <div id="toast" role="status" aria-live="polite"></div>
 
+<script src="shared.js"></script>
 <script>
 // ── HELPERS ──────────────────────────────────────────────
-const fmt = n => '$' + Math.round(n).toLocaleString('es-UY');
-const num = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? n : 0; };
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 function lsGet(key, fallback) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; }
   catch(e) { return fallback; }
@@ -223,16 +205,6 @@ function lsGet(key, fallback) {
 function lsSet(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
   catch(e) { toast('⚠️ Almacenamiento lleno: no se pudo guardar', true); return false; }
-}
-
-let toastTimer;
-function toast(msg, isErr) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.toggle('err', !!isErr);
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
 // ── CONFIG POR SECCIÓN ───────────────────────────────────
@@ -398,6 +370,7 @@ function saveTarifas(ns, data) { lsSet('ntec_t2_' + ns, data); }
 let uid = 1;
 const srvs = { cel: [], pc: [] };
 const activeCat = { cel: 'samsung', pc: 'hw' };
+const detalleCache = {};
 
 // ── PLANTILLAS ───────────────────────────────────────────
 function selectTpl(ns) {
@@ -521,13 +494,16 @@ function agregarSrv(ns) {
   const val = sel.value;
   if (!val) return;
   const [nombre, precioStr] = val.split('|');
-  let mano = num(precioStr);
-  if (mano === 0) mano = num(prompt('Ingresá la mano de obra para: ' + nombre));
-  srvs[ns].push({ id: uid++, nombre, mano, repuesto: 0, pct: 30 });
+  const srv = { id: uid++, nombre, mano: num(precioStr), repuesto: 0, pct: 30 };
+  srvs[ns].push(srv);
   sel.value = '';
   renderSrvs(ns);
   calcular(ns);
   saveDraft(ns);
+  if (!srv.mano) {
+    toast('Ingresá la mano de obra de: ' + nombre, true);
+    document.querySelector(`.srv-input[data-ns="${ns}"][data-id="${srv.id}"][data-campo="mano"]`)?.focus();
+  }
 }
 
 // "Usar →" desde tarifas — agrega listo para completar
@@ -607,7 +583,7 @@ function calcular(ns) {
   const margen = total > 0 ? Math.round((neta / total) * 100) : 0;
 
   const det = document.getElementById(ns + '-r-detalle');
-  det.innerHTML = lista.length ? lista.map(s => {
+  const html = lista.length ? lista.map(s => {
     const gan = num(s.repuesto) * (num(s.pct) / 100);
     const tot = num(s.mano) + num(s.repuesto) + gan;
     return `<div class="srv-result-block">
@@ -618,6 +594,7 @@ function calcular(ns) {
       <div class="srv-result-row"><span class="sl">Subtotal</span><span class="sv total">${fmt(tot)}</span></div>
     </div>`;
   }).join('') : '';
+  if (detalleCache[ns] !== html) { det.innerHTML = html; detalleCache[ns] = html; }
 
   document.getElementById(ns + '-r-total').textContent  = fmt(total);
   document.getElementById(ns + '-r-total2').textContent = fmt(total);
@@ -633,13 +610,17 @@ function calcular(ns) {
 }
 
 // ── BORRADOR (autoguardado del formulario) ───────────────
+const draftTimers = {};
 function saveDraft(ns) {
-  const v = id => document.getElementById(id).value;
-  lsSet('ntec_' + ns + '_draft', {
-    equipo: v(ns+'-equipo'), cliente: v(ns+'-cliente'),
-    otros: v(ns+'-otros'), garantia: v(ns+'-garantia'), notas: v(ns+'-notas'),
-    srvs: srvs[ns],
-  });
+  clearTimeout(draftTimers[ns]);
+  draftTimers[ns] = setTimeout(() => {
+    const v = id => document.getElementById(id).value;
+    lsSet('ntec_' + ns + '_draft', {
+      equipo: v(ns+'-equipo'), cliente: v(ns+'-cliente'),
+      otros: v(ns+'-otros'), garantia: v(ns+'-garantia'), notas: v(ns+'-notas'),
+      srvs: srvs[ns],
+    });
+  }, 400);
 }
 
 function loadDraft(ns) {
@@ -657,7 +638,10 @@ function loadDraft(ns) {
   return true;
 }
 
-function clearDraft(ns) { try { localStorage.removeItem('ntec_' + ns + '_draft'); } catch(e){} }
+function clearDraft(ns) {
+  clearTimeout(draftTimers[ns]);
+  try { localStorage.removeItem('ntec_' + ns + '_draft'); } catch(e){}
+}
 
 // ── GUARDAR / LIMPIAR ────────────────────────────────────
 function guardar(ns) {
@@ -734,12 +718,27 @@ function clearHistory(ns) {
 }
 
 // ── GENERAR PDF ──────────────────────────────────────────
-function generarPDF(ns) {
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    toast('No se pudo cargar jsPDF — verificá tu conexión a internet.', true);
-    return;
+let jsPDFPromise = null;
+function loadJsPDF() {
+  if (!jsPDFPromise) {
+    jsPDFPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.integrity = 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';
+      s.crossOrigin = 'anonymous';
+      s.onload = () => resolve(window.jspdf);
+      s.onerror = () => { jsPDFPromise = null; reject(new Error('jsPDF no disponible')); };
+      document.head.appendChild(s);
+    });
   }
-  const { jsPDF } = window.jspdf;
+  return jsPDFPromise;
+}
+
+async function generarPDF(ns) {
+  let jspdf;
+  try { jspdf = await loadJsPDF(); }
+  catch (e) { toast('No se pudo cargar jsPDF — verificá tu conexión a internet.', true); return; }
+  const { jsPDF } = jspdf;
   const doc = new jsPDF();
   const C = CFG[ns];
   const equipo = document.getElementById(ns + '-equipo').value.trim();
@@ -975,9 +974,6 @@ function importData(file) {
 }
 
 // ── SINCRONIZACIÓN EN LA NUBE (Supabase) ─────────────────
-const SUPA_URL = 'https://vkfgweehpvyotqeplsie.supabase.co';
-const SUPA_KEY = 'sb_publishable_pprhcX5Pl9fWQkNIOaSDzQ_Ql7ySzzv';
-
 async function cloudGuardar(ns, entry) {
   try {
     const r = await fetch(SUPA_URL + '/rest/v1/presupuestos', {
@@ -1002,7 +998,7 @@ async function cloudGuardar(ns, entry) {
 
 async function cloudCargar() {
   try {
-    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?select=*&order=creado_en.desc&limit=200', {
+    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?select=*&order=creado_en.desc&limit=' + SUPA_LIMIT, {
       headers: { 'apikey': SUPA_KEY },
     });
     if (!r.ok) return;
@@ -1074,7 +1070,6 @@ function onFieldInput(e) {
   if (ns) { calcular(ns); saveDraft(ns); }
 }
 document.addEventListener('input', onFieldInput);
-document.addEventListener('change', onFieldInput);
 
 document.getElementById('import-file').addEventListener('change', e => {
   if (e.target.files[0]) importData(e.target.files[0]);

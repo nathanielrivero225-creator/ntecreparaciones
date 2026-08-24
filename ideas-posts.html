@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Banco de 30 ideas de contenido para Instagram de @ntecreparaciones: reels, carruseles, posts y stories listos para publicar.">
 <title>Ideas de Posts — @ntecreparaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -89,20 +92,20 @@
 </div>
 
 <div class="stats-bar">
-  <div class="stat"><div class="stat-num">12</div><div class="stat-label">Reels</div></div>
-  <div class="stat"><div class="stat-num">10</div><div class="stat-label">Carruseles</div></div>
-  <div class="stat"><div class="stat-num">8</div><div class="stat-label">Posts / Stories</div></div>
-  <div class="stat"><div class="stat-num"><em>~10</em></div><div class="stat-label">semanas de contenido</div></div>
+  <div class="stat"><div class="stat-num" id="stat-reels">–</div><div class="stat-label">Reels</div></div>
+  <div class="stat"><div class="stat-num" id="stat-carruseles">–</div><div class="stat-label">Carruseles</div></div>
+  <div class="stat"><div class="stat-num" id="stat-posts">–</div><div class="stat-label">Posts / Stories</div></div>
+  <div class="stat"><div class="stat-num"><em id="stat-semanas">–</em></div><div class="stat-label">semanas de contenido</div></div>
 </div>
 
 <div class="filters">
-  <button class="filter-btn active" onclick="filterPosts('all', this)">Todos (30)</button>
-  <button class="filter-btn" onclick="filterPosts('educativo', this)">📚 Educativo</button>
-  <button class="filter-btn" onclick="filterPosts('ventas', this)">💰 Ventas</button>
-  <button class="filter-btn" onclick="filterPosts('viral', this)">🔥 Viral</button>
-  <button class="filter-btn" onclick="filterPosts('confianza', this)">⭐ Confianza</button>
-  <button class="filter-btn" onclick="filterPosts('reel', this)">🎬 Solo Reels</button>
-  <button class="filter-btn" onclick="filterPosts('carrusel', this)">📎 Solo Carruseles</button>
+  <button class="filter-btn active" data-filter="all" type="button">Todos (30)</button>
+  <button class="filter-btn" data-filter="educativo" type="button">📚 Educativo</button>
+  <button class="filter-btn" data-filter="ventas" type="button">💰 Ventas</button>
+  <button class="filter-btn" data-filter="viral" type="button">🔥 Viral</button>
+  <button class="filter-btn" data-filter="confianza" type="button">⭐ Confianza</button>
+  <button class="filter-btn" data-filter="reel" type="button">🎬 Solo Reels</button>
+  <button class="filter-btn" data-filter="carrusel" type="button">📎 Solo Carruseles</button>
 </div>
 
 <div class="posts-grid" id="grid">
@@ -444,22 +447,30 @@
 </div>
 
 <script>
-function filterPosts(cat, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const cards = document.querySelectorAll('.post-card');
+const cards = Array.from(document.querySelectorAll('.post-card'));
+
+document.getElementById('stat-reels').textContent = cards.filter(c => c.dataset.format === 'reel').length;
+document.getElementById('stat-carruseles').textContent = cards.filter(c => c.dataset.format === 'carrusel').length;
+document.getElementById('stat-posts').textContent = cards.filter(c => c.dataset.format === 'post' || c.dataset.format === 'story').length;
+const semanas = cards
+  .map(c => (c.querySelector('.post-week')?.textContent.match(/Semana (\d+)/) || [])[1])
+  .filter(Boolean)
+  .map(Number);
+if (semanas.length) document.getElementById('stat-semanas').textContent = Math.max(...semanas);
+const allBtn = document.querySelector('[data-filter="all"]');
+if (allBtn) allBtn.textContent = 'Todos (' + cards.length + ')';
+
+document.querySelector('.filters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  const f = btn.dataset.filter;
+  const isFormat = f === 'reel' || f === 'carrusel';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
   cards.forEach(card => {
-    if (cat === 'all') {
-      card.classList.remove('hidden');
-    } else if (cat === 'reel') {
-      card.classList.toggle('hidden', card.dataset.format !== 'reel');
-    } else if (cat === 'carrusel') {
-      card.classList.toggle('hidden', card.dataset.format !== 'carrusel');
-    } else {
-      card.classList.toggle('hidden', card.dataset.cat !== cat);
-    }
+    const show = f === 'all' || (isFormat ? card.dataset.format === f : card.dataset.cat === f);
+    card.classList.toggle('hidden', !show);
   });
-}
+});
 </script>
 </body>
 </html>
