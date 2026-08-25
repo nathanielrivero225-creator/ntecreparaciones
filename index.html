@@ -692,14 +692,15 @@ async function sincronizarCloud(ns, entry, eraEdicion, fpPrevio) {
   const key = 'ntec_' + ns + '_h';
   if (eraEdicion && entry.cloud_id != null) {
     const ok = await cloudActualizar(ns, entry);
-    if (!ok) toast('Actualizado local — la nube no respondió', true);
+    if (!ok) toast('No se pudo actualizar en la nube — falta configurar permisos UPDATE en Supabase', true);
     return;
   }
   if (eraEdicion && fpPrevio) {
     const p = String(fpPrevio.fecha || '').split('/').map(Number);
     if (p.length === 3 && p[0] && p[2]) {
       const rg = rangoDia(p[2], p[1] - 1, p[0]);
-      await supaEliminar({ ns, fp: { equipo: fpPrevio.equipo, cliente: fpPrevio.cliente, total: fpPrevio.total, desde: rg.desde, hasta: rg.hasta } });
+      const del = await supaEliminar({ ns, fp: { equipo: fpPrevio.equipo, cliente: fpPrevio.cliente, total: fpPrevio.total, desde: rg.desde, hasta: rg.hasta } });
+      if (del.ok && del.affected === 0) toast('No se pudo borrar el registro anterior en la nube — falta configurar permisos DELETE en Supabase', true);
     }
   }
   const cid = await cloudGuardar(ns, entry);
@@ -1062,26 +1063,17 @@ async function cloudGuardar(ns, entry) {
 }
 
 async function cloudActualizar(ns, entry) {
-  try {
-    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?id=eq.' + encodeURIComponent(entry.cloud_id), {
-      method: 'PATCH',
-      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({
-        ns,
-        equipo: entry.equipo,
-        cliente: entry.cliente || null,
-        servicios: entry.servicios || [],
-        otros: num(entry.otros),
-        garantia: entry.garantia || null,
-        notas: entry.notas || null,
-        total: Math.round(num(entry.total)),
-      }),
-    });
-    return r.ok;
-  } catch (e) {
-    console.warn('Actualización en la nube falló:', e);
-    return false;
-  }
+  const res = await supaPatch(entry.cloud_id, {
+    ns,
+    equipo: entry.equipo,
+    cliente: entry.cliente || null,
+    servicios: entry.servicios || [],
+    otros: num(entry.otros),
+    garantia: entry.garantia || null,
+    notas: entry.notas || null,
+    total: Math.round(num(entry.total)),
+  });
+  return res.ok && res.affected > 0;
 }
 
 async function cloudCargar() {

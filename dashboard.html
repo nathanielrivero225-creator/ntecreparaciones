@@ -278,20 +278,21 @@ function editarPresupuesto(d) {
 }
 
 async function eliminarPresupuesto(d) {
-  if (!confirm('¿Eliminar el presupuesto de "' + (d.equipo || 'equipo') + '"?\nTambién se borra de la base de datos.')) return;
-  let okNube;
+  if (!confirm('¿Eliminar el presupuesto de "' + (d.equipo || 'equipo') + '"?')) return;
+  let res = { ok: false, affected: 0 };
   if (d.rid != null) {
-    okNube = await supaEliminar({ id: d.rid });
+    res = await supaEliminar({ id: d.rid });
   } else {
     const rg = rangoDia(d.ts.getFullYear(), d.ts.getMonth(), d.ts.getDate());
-    okNube = await supaEliminar({ ns: d.ns, fp: { equipo: d.equipo, cliente: d.cliente, total: d.total, desde: rg.desde, hasta: rg.hasta } });
+    res = await supaEliminar({ ns: d.ns, fp: { equipo: d.equipo, cliente: d.cliente, total: d.total, desde: rg.desde, hasta: rg.hasta } });
   }
   quitarCopiasLocales(d);
   DATOS = DATOS.filter(x => x !== d);
   actualizarEstado();
   render();
-  if (okNube) toast('🗑 Presupuesto eliminado');
-  else toast('Eliminado local — la nube no respondió', true);
+  if (!res.ok) toast('Eliminado local — la nube no respondió', true);
+  else if (res.affected === 0) toast('No se pudo borrar en la nube — falta configurar permisos DELETE en Supabase', true);
+  else toast('🗑 Presupuesto eliminado');
 }
 
 function quitarCopiasLocales(d) {

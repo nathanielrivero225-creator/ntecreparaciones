@@ -39,11 +39,35 @@ async function supaEliminar(opts) {
       + '&total=eq.' + Math.round(num(f.total))
       + '&creado_en=gte.' + encodeURIComponent(f.desde)
       + '&creado_en=lt.' + encodeURIComponent(f.hasta);
-  } else return false;
+  } else return { ok: false, affected: 0 };
   try {
-    const r = await fetch(url, { method: 'DELETE', headers: { 'apikey': SUPA_KEY } });
-    return r.ok;
+    const r = await fetch(url, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPA_KEY, Prefer: 'return=count' },
+    });
+    if (!r.ok) return { ok: false, affected: 0 };
+    const cr = r.headers.get('content-range') || '';
+    const m = cr.match(/\/(\d+)$/);
+    const affected = m ? parseInt(m[1], 10) : -1;
+    return { ok: true, affected };
   } catch (e) {
-    return false;
+    return { ok: false, affected: 0 };
+  }
+}
+
+async function supaPatch(id, body) {
+  try {
+    const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=count' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return { ok: false, affected: 0 };
+    const cr = r.headers.get('content-range') || '';
+    const m = cr.match(/\/(\d+)$/);
+    const affected = m ? parseInt(m[1], 10) : -1;
+    return { ok: true, affected };
+  } catch (e) {
+    return { ok: false, affected: 0 };
   }
 }
