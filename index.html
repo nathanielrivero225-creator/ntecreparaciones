@@ -580,6 +580,7 @@ function onSrvChange(ns, id, campo, val) {
 
 function renderSrvs(ns) {
   const cont = document.getElementById(ns + '-lista');
+  if (!cont || !srvs[ns]) return;
   if (!srvs[ns].length) {
     cont.innerHTML = '<div class="empty-srv">Ningún servicio agregado aún</div>';
     return;
