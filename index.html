@@ -10,19 +10,12 @@
 <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
 <style>
 
-.app-header { max-width:980px; margin:0 auto 20px; display:flex; align-items:center; justify-content:space-between; }
-.logo { font-size:20px; font-weight:700; letter-spacing:-.5px; }
-.logo span { color:var(--accent); }
-.tagline { font-size:12px; color:var(--text-hint); margin-top:2px; }
-.market-pill { font-size:12px; padding:4px 12px; border-radius:20px; background:var(--accent-bg); color:var(--accent-text); border:1px solid #b8d0f0; cursor:pointer; font-family:inherit; }
-.market-pill:hover { background:#d5e6f8; }
-
-.layout { max-width:980px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.layout { max-width:var(--max-w,1040px); margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
 @media(max-width:680px){ .layout { grid-template-columns:1fr; } }
 .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); }
 .card-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-hint); margin-bottom:16px; display:flex; align-items:center; gap:6px; }
 .card-title svg { width:14px; height:14px; stroke:var(--text-hint); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
-.section-divider { max-width:980px; margin:32px auto 16px; display:flex; align-items:center; gap:12px; }
+.section-divider { max-width:var(--max-w,1040px); margin:32px auto 16px; display:flex; align-items:center; gap:12px; }
 .section-divider .line { flex:1; border-top:1px solid var(--border); }
 .section-divider .lbl { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-hint); white-space:nowrap; display:flex; align-items:center; gap:6px; }
 
@@ -91,9 +84,9 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 .btn-secondary:hover { background:var(--surface-2); }
 
 /* MARKET PANEL */
-  .market-panel { max-width:980px; margin:16px auto 0; display:none; }
+  .market-panel { max-width:var(--max-w,1040px); margin:16px auto 0; display:none; }
   .market-panel.open { display:block; }
-  .backup-card { max-width:980px; margin:24px auto 40px; }
+  .backup-card { max-width:var(--max-w,1040px); margin:24px auto 40px; }
   .backup-note { font-size:12px; color:var(--text-hint); margin:0 0 12px; }
 .market-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); }
 .market-title { font-size:13px; font-weight:700; margin-bottom:14px; color:var(--text); display:flex; justify-content:space-between; }
@@ -119,7 +112,7 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 .clear-history { background:none; border:none; font-size:12px; color:var(--text-hint); cursor:pointer; text-decoration:underline; padding:0; display:block; margin:8px 0 0 auto; font-family:inherit; }
 
 /* TARIFAS */
-.tarifas-section { max-width:980px; margin:16px auto 0; }
+.tarifas-section { max-width:var(--max-w,1040px); margin:16px auto 0; }
 .tarifas-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
 .tarifas-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-hint); display:flex; align-items:center; gap:6px; }
 .tarifas-sub { font-size:12px; color:var(--text-hint); }
@@ -156,17 +149,6 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 </style>
 </head>
 <body>
-
-<div class="app-header">
-  <div>
-    <div class="logo">Ntec<span>.</span> Presupuestos</div>
-    <div class="tagline">Calculadora de reparaciones</div>
-  </div>
-  <div style="display:flex;gap:8px">
-    <button type="button" class="market-pill" data-act="toggle-market"><i data-lucide="bar-chart-2" style="width:14px;height:14px"></i> Precios del mercado UY</button>
-    <a class="market-pill" href="dashboard.html" style="text-decoration:none;display:inline-block"><i data-lucide="layout-dashboard" style="width:14px;height:14px"></i> Dashboard</a>
-  </div>
-</div>
 
 <div class="market-panel" id="market-panel">
   <div class="market-card">
@@ -295,7 +277,7 @@ const CFG = {
         { v:'Diagnóstico técnico PC', t:'Diagnóstico técnico', p:500 },
       ]},
     ],
-    tabs: [['hw','🔧 Hardware'],['sw','💻 Software'],['mant','🧹 Mantenimiento']],
+    tabs: [['hw','Hardware'],['sw','Software'],['mant','Mantenimiento']],
     th: ['Servicio','Detalle'],
     refFooter: 'Referencias: WaltosTech UY, Tecnico.uy, MercadoLibre UY (2025–2026).',
   },
@@ -407,7 +389,7 @@ function tarifasTpl(ns) {
   return `
   <div class="tarifas-section">
     <div class="tarifas-header">
-      <div class="tarifas-title">📋 Tarifas mano de obra — ${C.tarifasTitulo}</div>
+      <div class="tarifas-title"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--text-hint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Tarifas mano de obra — ${C.tarifasTitulo}</div>
       <div style="display:flex;gap:8px;align-items:center">
         <span class="tarifas-sub"><i data-lucide="pencil" style="width:12px;height:12px"></i> editar · "Usar →" agrega el servicio arriba</span>
         <button type="button" class="btn-edit-p" data-act="reset-tarifas" data-ns="${ns}" style="font-size:11px"><i data-lucide="rotate-ccw" style="width:12px;height:12px"></i> Restaurar</button>
@@ -686,7 +668,7 @@ function guardar(ns) {
   if (!lsSet(key, h)) return;
   renderHistory(ns);
   terminarEdicion(ns);
-  toast(editandoEste ? '✓ Presupuesto actualizado' : '✓ Presupuesto guardado en el historial');
+  toast(editandoEste ? 'Presupuesto actualizado' : 'Presupuesto guardado en el historial');
   sincronizarCloud(ns, entry, editandoEste, fpPrevio);
 }
 
@@ -732,13 +714,13 @@ function iniciarEdicion(ns, entry) {
   calcular(ns);
   saveDraft(ns);
   editing = { ns, id: entry.id != null ? entry.id : Date.now(), cloudId: entry.cloud_id != null ? entry.cloud_id : null };
-  setBotonGuardar(ns, '💾 Guardar cambios');
+  setBotonGuardar(ns, 'Guardar cambios');
 }
 
 function terminarEdicion(ns) {
   if (!editing || editing.ns !== ns) return;
   editing = null;
-  setBotonGuardar(ns, '💾 Guardar presupuesto');
+  setBotonGuardar(ns, 'Guardar presupuesto');
 }
 
 function limpiar(ns) {
@@ -976,7 +958,7 @@ function confirmEdit(ns, cat, id) {
   const nuevo = num(inp.value);
   const data = getTarifas(ns);
   const row = (data[cat] || []).find(r => r.id === id);
-  if (row) { row.precio = nuevo; saveTarifas(ns, data); toast('✓ Precio actualizado'); }
+  if (row) { row.precio = nuevo; saveTarifas(ns, data); toast('Precio actualizado'); }
   renderTarifas(ns, cat);
 }
 
@@ -984,7 +966,7 @@ function resetTarifas(ns) {
   if (confirm('¿Restaurar tarifas a los valores sugeridos del mercado?')) {
     localStorage.removeItem('ntec_t2_' + ns);
     renderTarifas(ns, activeCat[ns]);
-    toast('↺ Tarifas restauradas');
+    toast('Tarifas restauradas');
   }
 }
 
@@ -1015,7 +997,7 @@ function exportData() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast('✓ Respaldo exportado');
+  toast('Respaldo exportado');
 }
 
 function importData(file) {
@@ -1031,7 +1013,7 @@ function importData(file) {
       });
       renderTarifas('cel', activeCat.cel);
       renderTarifas('pc', activeCat.pc);
-      toast('✓ Respaldo importado');
+      toast('Respaldo importado');
     } catch (err) {
       toast('Archivo inválido — usá un respaldo exportado desde esta app.', true);
     }
@@ -1113,7 +1095,7 @@ async function cloudCargar() {
       if (nuevos) lsSet('ntec_' + ns + '_h', h.slice(0, 30));
       renderHistory(ns);
     });
-    if (nuevos) toast('☁️ ' + nuevos + ' presupuesto(s) recuperados de la nube');
+    if (nuevos) toast(nuevos + ' presupuesto(s) recuperados de la nube');
   } catch (e) {
     console.warn('Carga desde la nube falló:', e);
   }
@@ -1179,6 +1161,7 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ─────────────────────────────────────────────────
 function initIcons() { if (window.lucide) lucide.createIcons(); }
+document.body.insertAdjacentHTML('afterbegin', renderNav('index'));
 document.getElementById('sections').innerHTML = NSS.map(sectionTpl).join('');
 let restored = false;
 NSS.forEach(ns => {
