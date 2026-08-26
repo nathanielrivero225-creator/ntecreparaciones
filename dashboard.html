@@ -43,11 +43,14 @@ tr:last-child td { border-bottom:none; }
 .badge { display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:12px; }
 .b-cel { background:var(--accent-bg); color:var(--accent-text); }
 .b-pc { background:#eeedfe; color:#3c3489; }
+.b-venta { background:#fff3e0; color:#e65100; }
 .vacio { text-align:center; color:var(--text-hint); font-size:13px; padding:24px 0; }
 .acciones { white-space:nowrap; text-align:right; }
 .btn-row { background:none; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:13px; padding:3px 8px; margin-left:4px; color:var(--text-muted); font-family:inherit; transition:all .15s; }
 .btn-row:hover { background:var(--surface-2); }
 .btn-row.peligro:hover { background:#fde8e8; border-color:#f0b9b3; color:var(--danger); }
+.metric.separator { background:none; border:none; box-shadow:none; padding:6px 16px 2px; }
+.metric.separator .m-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
 </style>
 </head>
 <body>
@@ -115,18 +118,18 @@ async function cargarDatos() {
       (await r.json()).forEach(x => {
         const ts = new Date(x.creado_en);
         if (isNaN(ts)) return;
-        datos.push({ rid: x.id != null ? x.id : null, lid: null, ts, ns: x.ns === 'pc' ? 'pc' : 'cel', equipo: x.equipo || '', cliente: x.cliente || '', servicios: Array.isArray(x.servicios) ? x.servicios : [], otros: num(x.otros), total: num(x.total), garantia: x.garantia || '', notas: x.notas || '' });
+        datos.push({ rid: x.id != null ? x.id : null, lid: null, ts, ns: x.ns === 'pc' ? 'pc' : x.ns === 'venta' ? 'venta' : 'cel', equipo: x.equipo || '', cliente: x.cliente || '', servicios: Array.isArray(x.servicios) ? x.servicios : [], otros: num(x.otros), total: num(x.total), garantia: x.garantia || '', notas: x.notas || '', venta: x.venta || null });
       });
     }
   } catch (e) { console.warn('nube caída, uso solo local', e); }
   const porHuella = new Map(datos.map(d => [huella(d), d]));
-  ['cel', 'pc'].forEach(ns => {
+  ['cel', 'pc', 'venta'].forEach(ns => {
     try {
       (JSON.parse(localStorage.getItem('ntec_' + ns + '_h') || '[]')).forEach(e => {
         const p = String(e.fecha || '').split('/').map(Number);
         const ts = p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(e.fecha);
         if (isNaN(ts)) return;
-        const d = { rid: e.cloud_id != null ? e.cloud_id : null, lid: e.id, ts, ns, equipo: e.equipo || '', cliente: e.cliente || '', servicios: Array.isArray(e.servicios) ? e.servicios : [], otros: num(e.otros), total: num(e.total), garantia: e.garantia || '', notas: e.notas || '' };
+        const d = { rid: e.cloud_id != null ? e.cloud_id : null, lid: e.id, ts, ns, equipo: e.equipo || '', cliente: e.cliente || '', servicios: Array.isArray(e.servicios) ? e.servicios : [], otros: num(e.otros), total: num(e.total), garantia: e.garantia || '', notas: e.notas || '', venta: e.venta || null };
         const existente = porHuella.get(huella(d));
         if (existente) { existente.lid = e.id; return; }
         porHuella.set(huella(d), d);
@@ -141,6 +144,13 @@ async function cargarDatos() {
 function diaTxt(d) { return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
 
 function desglosar(e) {
+  if (e.venta) {
+    const v = e.venta;
+    const inversion = num(v.compra) + num(v.repuesto) + num(e.otros);
+    const precioVenta = num(v.precioVenta);
+    const ganancia = precioVenta - inversion;
+    return { ingreso: precioVenta, mano: 0, materiales: num(v.repuesto), ganancia, otros: num(e.otros) };
+  }
   let mano = 0, rep = 0, ganRep = 0;
   (e.servicios || []).forEach(s => {
     mano += num(s.mano);
@@ -160,27 +170,64 @@ function filtrar() {
 function render() {
   const fil = filtrar();
   let ing = 0, gan = 0, mat = 0, mano = 0, otros = 0;
-  const cats = { cel: { n: 0, ing: 0, gan: 0 }, pc: { n: 0, ing: 0, gan: 0 } };
+  let ingRep = 0, ganRep = 0, matRep = 0, manoRep = 0, otrosRep = 0;
+  let ingVen = 0, ganVen = 0;
+  const cats = { cel: { n: 0, ing: 0, gan: 0 }, pc: { n: 0, ing: 0, gan: 0 }, venta: { n: 0, ing: 0, gan: 0 } };
   fil.forEach(e => {
     const d = desglosar(e);
+    const esVenta = !!e.venta;
     ing += d.ingreso; gan += d.ganancia; mat += d.materiales; mano += d.mano; otros += d.otros;
+    if (esVenta) {
+      ingVen += d.ingreso; ganVen += d.ganancia;
+    } else {
+      ingRep += d.ingreso; ganRep += d.ganancia; matRep += d.materiales; manoRep += d.mano; otrosRep += d.otros;
+    }
     const c = cats[e.ns] || (cats[e.ns] = { n: 0, ing: 0, gan: 0 });
     c.n++; c.ing += d.ingreso; c.gan += d.ganancia;
   });
   const n = fil.length;
   const margen = ing > 0 ? Math.round(gan / ing * 100) : 0;
+  const margenRep = ingRep > 0 ? Math.round(ganRep / ingRep * 100) : 0;
+  const margenVen = ingVen > 0 ? Math.round(ganVen / ingVen * 100) : 0;
+  const nRep = fil.filter(e => !e.venta).length;
+  const nVen = fil.filter(e => !!e.venta).length;
 
-  document.getElementById('metrics').innerHTML =
-    met('Ingresos totales', fmt(ing), 'accent') +
-    met('Ganancia neta', fmt(gan), 'success', margen + '% margen') +
-    met('Materiales / repuestos', fmt(mat), '', 'costo estimado') +
-    met('Mano de obra', fmt(mano)) +
-    met('Otros costos', fmt(otros)) +
-    met(n === 1 ? 'Presupuesto' : 'Presupuestos', String(n), '', n ? 'promedio ' + fmt(ing / n) : '');
+  let html = '';
+  if (ingRep > 0 && ingVen > 0) {
+    html += met('Ingresos totales', fmt(ing), 'accent', n + ' registros');
+    html += met('Ganancia total', fmt(gan), 'success', margen + '% margen');
+    html += '<div class="metric separator"><div class="m-label">— Reparaciones —</div></div>';
+    html += met('Ganancia reparaciones', fmt(ganRep), 'success', margenRep + '% margen');
+    html += met('Materiales', fmt(matRep), '', nRep + ' reparaciones');
+    html += met('Mano de obra', fmt(manoRep));
+    html += '<div class="metric separator"><div class="m-label">— Ventas —</div></div>';
+    html += met('Ganancia ventas', fmt(ganVen), 'success', margenVen + '% margen');
+    html += met('Inversion ventas', fmt(ingVen - ganVen), '', nVen + ' ventas');
+  } else if (ingVen > 0) {
+    html += met('Ingresos por ventas', fmt(ingVen), 'accent', nVen + ' ventas');
+    html += met('Ganancia ventas', fmt(ganVen), 'success', margenVen + '% ROI');
+    html += met('Inversion total', fmt(ingVen - ganVen), '', 'compra + repuestos + otros');
+  } else {
+    html += met('Ingresos totales', fmt(ing), 'accent');
+    html += met('Ganancia neta', fmt(gan), 'success', margen + '% margen');
+    html += met('Materiales / repuestos', fmt(mat), '', 'costo estimado');
+    html += met('Mano de obra', fmt(mano));
+    html += met('Otros costos', fmt(otros));
+    html += met(n === 1 ? 'Presupuesto' : 'Presupuestos', String(n), '', n ? 'promedio ' + fmt(ing / n) : '');
+  }
+
+  document.getElementById('metrics').innerHTML = html;
 
   renderChart(fil);
   renderCats(cats, ing);
-  renderDesglose(ing, mat, mano, otros, gan);
+  const desgloseTitle = document.querySelector('#desglose').closest('.card').querySelector('.card-title');
+  if (ingRep > 0 && ingVen > 0) {
+    renderDesgloseDetallado(ingRep, matRep, manoRep, otrosRep, ganRep, ingVen, ganVen);
+    desgloseTitle.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Reparaciones vs Ventas — donde va cada peso?';
+  } else {
+    renderDesglose(ing, mat, mano, otros, gan);
+    desgloseTitle.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Donde va cada peso?';
+  }
   renderTabla(fil);
 }
 
@@ -192,14 +239,21 @@ function renderChart(fil) {
   const hoy = new Date(), meses = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    meses.push({ k: d.getFullYear() + '-' + d.getMonth(), lbl: MESES[d.getMonth()], ing: 0, gan: 0 });
+    meses.push({ k: d.getFullYear() + '-' + d.getMonth(), lbl: MESES[d.getMonth()], ing: 0, gan: 0, ingRep: 0, ganRep: 0, ingVen: 0, ganVen: 0 });
   }
   fil.forEach(e => {
     const k = e.ts.getFullYear() + '-' + e.ts.getMonth();
     const m = meses.find(x => x.k === k);
-    if (m) { const d = desglosar(e); m.ing += d.ingreso; m.gan += d.ganancia; }
+    if (m) {
+      const d = desglosar(e);
+      const esVenta = !!e.venta;
+      m.ing += d.ingreso; m.gan += d.ganancia;
+      if (esVenta) { m.ingVen += d.ingreso; m.ganVen += d.ganancia; }
+      else { m.ingRep += d.ingreso; m.ganRep += d.ganancia; }
+    }
   });
   const max = Math.max(...meses.map(m => m.ing), 1);
+  const tieneVentas = meses.some(m => m.ingVen > 0);
   document.getElementById('chart').innerHTML = meses.map(m => {
     const hi = Math.max(Math.round(m.ing / max * 110), m.ing ? 3 : 2);
     const hg = Math.max(Math.round(m.gan / max * 110), 2);
@@ -208,16 +262,24 @@ function renderChart(fil) {
       '<div class="bar gan" style="height:' + hg + 'px" data-v="' + esc(fmt(m.gan)) + '"></div></div>' +
       '<div class="chart-lbl">' + m.lbl + '</div></div>';
   }).join('');
+  const leyenda = document.querySelector('.leyenda');
+  if (leyenda) {
+    leyenda.innerHTML = '<span class="lg-ing">Ingresos totales</span><span class="lg-gan">Tu ganancia neta</span>' +
+      (tieneVentas ? '<span style="font-size:10px;color:var(--text-hint);margin-left:auto">Rep: <strong style="color:var(--accent)">' +
+        fmt(meses.reduce((s, m) => s + m.ingRep, 0)) + '</strong> · Ventas: <strong style="color:#e65100">' +
+        fmt(meses.reduce((s, m) => s + m.ingVen, 0)) + '</strong></span>' : '');
+  }
 }
 
 function renderCats(cats, ingTotal) {
-  const conf = [['cel', 'Celulares', '#1a6fd4'], ['pc', 'PC & Laptops', '#6c5ce7']];
+  const conf = [['cel', 'Celulares', '#1a6fd4'], ['pc', 'PC & Laptops', '#6c5ce7'], ['venta', 'Ventas (compra → reventa)', '#e67e22']];
   document.getElementById('cats').innerHTML = conf.map(([k, lbl, color]) => {
     const c = cats[k] || { n: 0, ing: 0, gan: 0 };
+    if (c.n === 0) return '';
     const pct = ingTotal > 0 ? Math.max(Math.round(c.ing / ingTotal * 100), 0) : 0;
     return '<div class="cat-row"><div class="cat-head"><span>' + lbl + '</span><strong>' + esc(fmt(c.ing)) + '</strong></div>' +
       '<div class="cat-track"><div class="cat-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
-      '<div class="cat-head" style="margin-top:3px;font-size:11px;color:var(--text-hint)"><span>' + c.n + ' presupuesto(s)</span><span>ganancia ' + esc(fmt(c.gan)) + '</span></div></div>';
+      '<div class="cat-head" style="margin-top:3px;font-size:11px;color:var(--text-hint)"><span>' + c.n + ' venta(s)</span><span>ganancia ' + esc(fmt(c.gan)) + '</span></div></div>';
   }).join('') || '<div class="vacio">Sin datos</div>';
 }
 
@@ -230,7 +292,32 @@ function renderDesglose(ing, mat, mano, otros, gan) {
   };
   document.getElementById('desglose').innerHTML = ing
     ? fila('Materiales / repuestos', mat, '#e67e22') + fila('Mano de obra', mano, '#1a6fd4') + fila('Otros costos', otros, '#95a5a6') + fila('Tu ganancia', gan, '#4caf7d')
-    : '<div class="vacio">Sin datos en este período</div>';
+    : '<div class="vacio">Sin datos en este periodo</div>';
+}
+
+function renderDesgloseDetallado(ingRep, matRep, manoRep, otrosRep, ganRep, ingVen, ganVen) {
+  const el = document.getElementById('desglose');
+  if (!ingRep && !ingVen) { el.innerHTML = '<div class="vacio">Sin datos en este periodo</div>'; return; }
+  const fila = (lbl, v, color, base) => {
+    const pct = base > 0 ? Math.round(v / base * 100) : 0;
+    return '<div class="cat-row"><div class="cat-head"><span>' + lbl + '</span><strong>' + esc(fmt(v)) + ' · ' + pct + '%</strong></div>' +
+      '<div class="cat-track"><div class="cat-fill" style="width:' + Math.min(pct, 100) + '%;background:' + color + '"></div></div></div>';
+  };
+  let html = '';
+  if (ingRep > 0) {
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.06em">Reparaciones</div>';
+    html += fila('Materiales / repuestos', matRep, '#e67e22', ingRep);
+    html += fila('Mano de obra', manoRep, '#1a6fd4', ingRep);
+    html += fila('Otros costos', otrosRep, '#95a5a6', ingRep);
+    html += fila('Tu ganancia', ganRep, '#4caf7d', ingRep);
+  }
+  if (ingVen > 0) {
+    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.06em">Ventas</div>';
+    const inversion = ingVen - ganVen;
+    html += fila('Inversion (compra + repuesto)', inversion, '#e67e22', ingVen);
+    html += fila('Tu ganancia', ganVen, '#4caf7d', ingVen);
+  }
+  el.innerHTML = html;
 }
 
 let ULTIMOS = [];
@@ -240,13 +327,18 @@ function renderTabla(fil) {
   if (!ULTIMOS.length) { document.getElementById('tabla').innerHTML = '<tr><td colspan="7" class="vacio">Todavía no hay presupuestos en este período</td></tr>'; return; }
   document.getElementById('tabla').innerHTML = ULTIMOS.map((e, i) => {
     const d = desglosar(e);
+    const esVenta = !!e.venta;
     const margen = d.ingreso > 0 ? Math.round(d.ganancia / d.ingreso * 100) : 0;
+    const tipoLabel = esVenta ? '<span class="badge b-venta">Venta</span>' : '<span class="badge ' + (e.ns === 'pc' ? 'b-pc' : 'b-cel') + '">' + (e.ns === 'pc' ? 'PC' : 'Cel') + '</span>';
+    const margenLabel = esVenta
+      ? '<span style="font-size:11px;color:var(--text-hint)">(ROI ' + margen + '%)</span>'
+      : '<span style="font-size:11px;color:var(--text-hint)">(' + margen + '%)</span>';
     return '<tr>' +
       '<td style="white-space:nowrap">' + diaTxt(e.ts) + '</td>' +
-      '<td><span class="badge ' + (e.ns === 'pc' ? 'b-pc' : 'b-cel') + '">' + (e.ns === 'pc' ? 'PC' : 'Cel') + '</span></td>' +
+      '<td>' + tipoLabel + '</td>' +
       '<td>' + esc(e.equipo || '—') + (e.cliente ? '<br><span style="font-size:11px;color:var(--text-hint)">' + esc(e.cliente) + '</span>' : '') + '</td>' +
       '<td class="t-num">' + esc(fmt(d.materiales)) + '</td>' +
-      '<td class="t-num" style="color:var(--success)">' + esc(fmt(d.ganancia)) + ' <span style="font-size:11px;color:var(--text-hint)">(' + margen + '%)</span></td>' +
+      '<td class="t-num" style="color:var(--success)">' + esc(fmt(d.ganancia)) + ' ' + margenLabel + '</td>' +
       '<td class="t-num"><strong>' + esc(fmt(d.ingreso)) + '</strong></td>' +
       '<td class="acciones">' +
         '<button type="button" class="btn-row" data-act="editar" data-i="' + i + '" title="Editar presupuesto"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
@@ -263,6 +355,7 @@ function editarPresupuesto(d) {
   } catch (err) {}
   if (!entry) {
     entry = { id: null, fecha: diaTxt(d.ts), equipo: d.equipo, cliente: d.cliente, servicios: d.servicios, otros: num(d.otros), garantia: d.garantia || '', notas: d.notas || '', total: Math.round(num(d.total)), cloud_id: d.rid != null ? d.rid : null };
+    if (d.venta) entry.venta = d.venta;
   }
   try { sessionStorage.setItem('ntec_edit', JSON.stringify({ ns: d.ns, entry })); } catch (err) {}
   location.href = 'index.html';

@@ -191,7 +191,7 @@ function lsSet(key, val) {
 }
 
 // ── CONFIG POR SECCIÓN ───────────────────────────────────
-const NSS = ['cel', 'pc'];
+const NSS = ['cel', 'venta', 'pc'];
 const GARANTIAS = ['30 días','90 días','6 meses','1 año'];
 
 const CFG = {
@@ -239,6 +239,16 @@ const CFG = {
     tabs: [['samsung','Samsung'],['iphone','iPhone'],['xiaomi','Xiaomi / Moto']],
     th: ['Reparación','Modelos'],
     refFooter: 'Referencias: ReparaloYA, Servicel, MercadoLibre UY (2025–2026).',
+  },
+  venta: {
+    titulo: 'Venta',
+    tipoPDF: 'Venta_Celular',
+    histTitulo: 'Historial Ventas',
+    icono: '<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+    phEquipo: 'Ej: Samsung A54 — comprado roto, pantalla nueva',
+    phNotas: 'Ej: comprado en Meli, vendedor X, estado general...',
+    venta: true,
+    divider: true,
   },
   pc: {
     titulo: 'PC / Laptop',
@@ -403,8 +413,57 @@ function tarifasTpl(ns) {
   </div>`;
 }
 
+function ventaTpl(ns) {
+  const C = CFG[ns];
+  return `
+  <div class="section-divider">
+    <div class="line"></div>
+    <div class="lbl">${C.icono}Venta de celulares</div>
+    <div class="line"></div>
+  </div>
+  <div class="layout">
+    <div class="card">
+      <div class="card-title">${C.icono}Datos de la venta</div>
+      <div class="field"><label for="${ns}-equipo">Modelo / descripcion</label><input type="text" id="${ns}-equipo" placeholder="${esc(C.phEquipo)}"></div>
+      <div class="field"><label for="${ns}-cliente">Comprador (opcional)</label><input type="text" id="${ns}-cliente" placeholder="Nombre del comprador"></div>
+      <div class="divider"></div>
+      <div class="field"><label for="${ns}-compra">Precio de compra (celular roto)</label><div class="pfx"><span>$</span><input type="number" id="${ns}-compra" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-repuesto">Costo del repuesto (pantalla, bateria, etc.)</label><div class="pfx"><span>$</span><input type="number" id="${ns}-repuesto" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-otros">Otros costos</label><div class="pfx"><span>$</span><input type="number" id="${ns}-otros" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-precio-venta">Precio de venta</label><div class="pfx"><span>$</span><input type="number" id="${ns}-precio-venta" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-notas">Notas</label><textarea id="${ns}-notas" rows="2" placeholder="${esc(C.phNotas)}"></textarea></div>
+      <div class="divider"></div>
+      <button type="button" class="btn btn-primary" data-act="save" data-ns="${ns}"><i data-lucide="save" style="width:15px;height:15px"></i> Guardar venta</button>
+      <button type="button" class="btn btn-secondary" data-act="pdf" data-ns="${ns}"><i data-lucide="file-text" style="width:15px;height:15px"></i> Generar comprobante</button>
+      <button type="button" class="btn btn-secondary" data-act="clear-form" data-ns="${ns}">Limpiar formulario</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title">${C.icono}Resumen de la venta</div>
+        <div class="metric-grid">
+          <div class="metric"><div class="m-label">Inversion total</div><div class="m-value" id="${ns}-r-total">$0</div></div>
+          <div class="metric"><div class="m-label">Tu ganancia</div><div class="m-value success" id="${ns}-r-neta">$0</div></div>
+        </div>
+        <div id="${ns}-r-detalle"></div>
+        <div class="divider"></div>
+        <div class="result-row"><span class="rl">Precio de compra</span><span class="rv" id="${ns}-r-compra" style="display:none">$0</span></div>
+        <div class="result-row"><span class="rl">Repuesto</span><span class="rv" id="${ns}-r-rep" style="display:none">$0</span></div>
+        <div class="result-row"><span class="rl">Otros costos</span><span class="rv" id="${ns}-r-otros" style="display:none">$0</span></div>
+        <div class="result-total"><span>Precio de venta <span id="${ns}-badge" class="badge badge-ok">—</span></span><span id="${ns}-r-total2">$0</span></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-hint);text-align:right" id="${ns}-r-garantia"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>${esc(C.histTitulo)}</div>
+        <div class="history-list" id="${ns}-history"></div>
+        <button type="button" class="clear-history" data-act="clear-history" data-ns="${ns}">Borrar historial</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function sectionTpl(ns) {
   const C = CFG[ns];
+  if (C.venta) return ventaTpl(ns);
   const divider = C.divider ? `
   <div class="section-divider">
     <div class="line"></div>
@@ -558,6 +617,7 @@ function renderSrvs(ns) {
 
 // ── CALCULAR ─────────────────────────────────────────────
 function calcular(ns) {
+  if (CFG[ns] && CFG[ns].venta) return calcularVenta(ns);
   const lista = srvs[ns];
   const otros = num(document.getElementById(ns + '-otros').value);
   const garantia = document.getElementById(ns + '-garantia').value;
@@ -594,31 +654,83 @@ function calcular(ns) {
   badge.className = margen >= 35 ? 'badge badge-ok' : margen >= 20 ? 'badge badge-warn' : 'badge badge-low';
 }
 
+function calcularVenta(ns) {
+  const compra = num(document.getElementById(ns + '-compra').value);
+  const repuesto = num(document.getElementById(ns + '-repuesto').value);
+  const otros = num(document.getElementById(ns + '-otros').value);
+  const precioVenta = num(document.getElementById(ns + '-precio-venta').value);
+  const inversion = compra + repuesto + otros;
+  const ganancia = precioVenta - inversion;
+  const roi = inversion > 0 ? Math.round((ganancia / inversion) * 100) : 0;
+
+  const det = document.getElementById(ns + '-r-detalle');
+  let html = '';
+  if (compra > 0) html += '<div class="srv-result-block"><div class="srv-r-name">Celular (roto)</div><div class="srv-result-row"><span class="sl">Precio compra</span><span class="sv total">' + fmt(compra) + '</span></div></div>';
+  if (repuesto > 0) html += '<div class="srv-result-block"><div class="srv-r-name">Repuesto</div><div class="srv-result-row"><span class="sl">Costo</span><span class="sv total">' + fmt(repuesto) + '</span></div></div>';
+  if (detalleCache[ns] !== html) { det.innerHTML = html; detalleCache[ns] = html; }
+
+  document.getElementById(ns + '-r-total').textContent = fmt(inversion);
+  document.getElementById(ns + '-r-total2').textContent = fmt(precioVenta);
+  document.getElementById(ns + '-r-neta').textContent = fmt(ganancia >= 0 ? ganancia : 0);
+
+  const compraEl = document.getElementById(ns + '-r-compra');
+  if (compra > 0) { compraEl.textContent = fmt(compra); compraEl.style.display = ''; } else { compraEl.style.display = 'none'; }
+  const repEl = document.getElementById(ns + '-r-rep');
+  if (repuesto > 0) { repEl.textContent = fmt(repuesto); repEl.style.display = ''; } else { repEl.style.display = 'none'; }
+  const otrosEl = document.getElementById(ns + '-r-otros');
+  if (otros > 0) { otrosEl.textContent = fmt(otros); otrosEl.style.display = ''; } else { otrosEl.style.display = 'none'; }
+
+  document.getElementById(ns + '-r-garantia').textContent = precioVenta > 0 ? 'ROI: ' + roi + '% — ganancia: ' + fmt(ganancia) : inversion > 0 ? 'Inversion total: ' + fmt(inversion) : '';
+  const badge = document.getElementById(ns + '-badge');
+  if (precioVenta > 0) {
+    badge.textContent = roi + '% ROI';
+    badge.className = ganancia > 0 ? (roi >= 50 ? 'badge badge-ok' : 'badge badge-warn') : 'badge badge-low';
+  } else {
+    badge.textContent = 'ingresa precio de venta';
+    badge.className = 'badge badge-warn';
+  }
+}
+
 // ── BORRADOR (autoguardado del formulario) ───────────────
 const draftTimers = {};
 function saveDraft(ns) {
   clearTimeout(draftTimers[ns]);
   draftTimers[ns] = setTimeout(() => {
     const v = id => document.getElementById(id).value;
-    lsSet('ntec_' + ns + '_draft', {
+    const draft = {
       equipo: v(ns+'-equipo'), cliente: v(ns+'-cliente'),
-      otros: v(ns+'-otros'), garantia: v(ns+'-garantia'), notas: v(ns+'-notas'),
+      otros: v(ns+'-otros'), notas: v(ns+'-notas'),
       srvs: srvs[ns],
-    });
+    };
+    if (CFG[ns] && CFG[ns].venta) {
+      draft.compra = v(ns+'-compra');
+      draft.repuesto = v(ns+'-repuesto');
+      draft.precioVenta = v(ns+'-precio-venta');
+    } else {
+      draft.garantia = v(ns+'-garantia');
+    }
+    lsSet('ntec_' + ns + '_draft', draft);
   }, 400);
 }
 
 function loadDraft(ns) {
   const d = lsGet('ntec_' + ns + '_draft', null);
-  if (!d || (!d.equipo && !d.cliente && !(d.srvs && d.srvs.length))) return false;
+  if (!d || (!d.equipo && !d.cliente && !(d.srvs && d.srvs.length) && !d.compra)) return false;
   const v = id => document.getElementById(id);
   v(ns+'-equipo').value   = d.equipo || '';
   v(ns+'-cliente').value  = d.cliente || '';
   v(ns+'-otros').value    = d.otros || '';
-  v(ns+'-garantia').value = d.garantia || '';
   v(ns+'-notas').value    = d.notas || '';
-  srvs[ns] = (d.srvs || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
-  renderSrvs(ns);
+  if (CFG[ns] && CFG[ns].venta) {
+    const v2 = id => { const el = document.getElementById(id); if (el) el.value = ''; };
+    if (d.compra) v(ns+'-compra').value = d.compra;
+    if (d.repuesto) v(ns+'-repuesto').value = d.repuesto;
+    if (d.precioVenta) v(ns+'-precio-venta').value = d.precioVenta;
+  } else {
+    v(ns+'-garantia').value = d.garantia || '';
+    srvs[ns] = (d.srvs || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
+    renderSrvs(ns);
+  }
   calcular(ns);
   return true;
 }
@@ -632,20 +744,28 @@ function clearDraft(ns) {
 function guardar(ns) {
   const equipo = document.getElementById(ns + '-equipo').value.trim();
   if (!equipo) { toast('Ingresá una descripción del equipo.', true); return; }
-  if (!srvs[ns].length) { toast('Agregá al menos un servicio.', true); return; }
+  const esVenta = CFG[ns] && CFG[ns].venta;
+  if (!esVenta && !srvs[ns].length) { toast('Agregá al menos un servicio.', true); return; }
   const otros = num(document.getElementById(ns + '-otros').value);
-  const { totalMano, totalRep, totalGan } = totales(srvs[ns]);
+  const { totalMano, totalRep, totalGan } = esVenta ? { totalMano: 0, totalRep: 0, totalGan: 0 } : totales(srvs[ns]);
   const entry = {
     id: Date.now(),
     fecha: new Date().toLocaleDateString('es-UY'),
     equipo,
     cliente: document.getElementById(ns + '-cliente').value.trim(),
-    servicios: srvs[ns].map(s => ({ nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) })),
+    servicios: esVenta ? [] : srvs[ns].map(s => ({ nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) })),
     otros,
-    garantia: document.getElementById(ns + '-garantia').value,
+    garantia: esVenta ? '' : document.getElementById(ns + '-garantia').value,
     notas: document.getElementById(ns + '-notas').value.trim(),
-    total: Math.round(totalMano + totalRep + totalGan + otros),
+    total: esVenta ? Math.round(num(document.getElementById(ns + '-precio-venta').value)) : Math.round(totalMano + totalRep + totalGan + otros),
   };
+  if (esVenta) {
+    entry.venta = {
+      compra: num(document.getElementById(ns + '-compra').value),
+      repuesto: num(document.getElementById(ns + '-repuesto').value),
+      precioVenta: num(document.getElementById(ns + '-precio-venta').value),
+    };
+  }
   const key = 'ntec_' + ns + '_h';
   const h = lsGet(key, []);
   const editandoEste = !!(editing && editing.ns === ns);
@@ -707,20 +827,29 @@ function iniciarEdicion(ns, entry) {
   document.getElementById(ns + '-equipo').value   = entry.equipo || '';
   document.getElementById(ns + '-cliente').value  = entry.cliente || '';
   document.getElementById(ns + '-otros').value    = entry.otros || '';
-  document.getElementById(ns + '-garantia').value = entry.garantia || '';
   document.getElementById(ns + '-notas').value    = entry.notas || '';
-  srvs[ns] = (entry.servicios || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
-  renderSrvs(ns);
+  if (CFG[ns] && CFG[ns].venta && entry.venta) {
+    const v = id => { const el = document.getElementById(id); if (el) el.value = entry.venta[id.replace(ns + '-', '')] || ''; };
+    v(ns + '-compra');
+    v(ns + '-repuesto');
+    v(ns + '-precio-venta');
+  } else if (!(CFG[ns] && CFG[ns].venta)) {
+    document.getElementById(ns + '-garantia').value = entry.garantia || '';
+    srvs[ns] = (entry.servicios || []).map(s => ({ id: uid++, nombre: s.nombre, mano: num(s.mano), repuesto: num(s.repuesto), pct: num(s.pct) }));
+    renderSrvs(ns);
+  }
   calcular(ns);
   saveDraft(ns);
   editing = { ns, id: entry.id != null ? entry.id : Date.now(), cloudId: entry.cloud_id != null ? entry.cloud_id : null };
-  setBotonGuardar(ns, 'Guardar cambios');
+  const esVenta = CFG[ns] && CFG[ns].venta;
+  setBotonGuardar(ns, esVenta ? 'Guardar cambios' : 'Guardar cambios');
 }
 
 function terminarEdicion(ns) {
   if (!editing || editing.ns !== ns) return;
   editing = null;
-  setBotonGuardar(ns, 'Guardar presupuesto');
+  const esVenta = CFG[ns] && CFG[ns].venta;
+  setBotonGuardar(ns, esVenta ? 'Guardar venta' : 'Guardar presupuesto');
 }
 
 function limpiar(ns) {
@@ -729,23 +858,36 @@ function limpiar(ns) {
   srvs[ns] = [];
   renderSrvs(ns);
   ['equipo','cliente','otros','notas'].forEach(f => { const el = document.getElementById(ns+'-'+f); if(el) el.value=''; });
-  document.getElementById(ns + '-garantia').value = '';
+  if (CFG[ns] && CFG[ns].venta) {
+    ['compra','repuesto','precio-venta'].forEach(f => { const el = document.getElementById(ns+'-'+f); if(el) el.value=''; });
+  } else {
+    document.getElementById(ns + '-garantia').value = '';
+  }
   clearDraft(ns);
   calcular(ns);
-  if (estabaEditando) toast('Edición cancelada');
+  if (estabaEditando) toast('Edicion cancelada');
 }
 
 // ── HISTORIAL ────────────────────────────────────────────
 function renderHistory(ns) {
   const cont = document.getElementById(ns + '-history');
   const h = lsGet('ntec_' + ns + '_h', []);
-  if (!h.length) { cont.innerHTML = '<div class="empty-history">Todavía no hay presupuestos guardados</div>'; return; }
-  cont.innerHTML = h.map(e => `
+  if (!h.length) { cont.innerHTML = '<div class="empty-history">Todavia no hay presupuestos guardados</div>'; return; }
+  cont.innerHTML = h.map(e => {
+    const esVenta = !!e.venta;
+    let sub = esc(e.fecha) + (e.cliente ? ' · ' + esc(e.cliente) : '');
+    if (esVenta && e.venta) {
+      const inv = num(e.venta.compra) + num(e.venta.repuesto) + num(e.otros);
+      const gan = num(e.venta.precioVenta) - inv;
+      sub += '<br><span style="color:var(--success);font-weight:500">Inversion: ' + fmt(inv) + ' → Ganancia: ' + fmt(gan) + '</span>';
+    }
+    return `
     <div class="history-item" role="button" tabindex="0" data-act="load-entry" data-ns="${ns}" data-id="${e.id}">
-      <div class="hi-header"><span class="hi-name">${esc(e.equipo)}</span><span class="hi-total">${fmt(e.total)}</span></div>
-      <div class="hi-date">${esc(e.fecha)}${e.cliente ? ' · ' + esc(e.cliente) : ''}</div>
+      <div class="hi-header"><span class="hi-name">${esc(e.equipo)}${esVenta ? ' <span style="font-size:10px;color:#e65100;font-weight:600">VENTA</span>' : ''}</span><span class="hi-total">${fmt(e.total)}</span></div>
+      <div class="hi-date">${sub}</div>
       ${e.servicios && e.servicios.length ? '<div class="hi-chips">' + e.servicios.map(s=>`<span class="hi-chip">${esc(s.nombre)}</span>`).join('') + '</div>' : ''}
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function cargarEntrada(ns, id) {
@@ -790,14 +932,23 @@ async function generarPDF(ns) {
   const C = CFG[ns];
   const equipo = document.getElementById(ns + '-equipo').value.trim();
   const cliente = document.getElementById(ns + '-cliente').value.trim();
-  const garantia = document.getElementById(ns + '-garantia').value;
   const notas = document.getElementById(ns + '-notas').value.trim();
   const otros = num(document.getElementById(ns + '-otros').value);
+  const esVenta = C.venta;
 
   if (!equipo) { toast('Ingresá una descripción del equipo.', true); return; }
 
-  const { totalMano, totalRep, totalGan } = totales(srvs[ns]);
-  const total = Math.round(totalMano + totalRep + totalGan + otros);
+  let total = 0, garantia = '';
+  if (esVenta) {
+    const compra = num(document.getElementById(ns + '-compra').value);
+    const repuesto = num(document.getElementById(ns + '-repuesto').value);
+    const precioVenta = num(document.getElementById(ns + '-precio-venta').value);
+    total = precioVenta;
+  } else {
+    garantia = document.getElementById(ns + '-garantia').value;
+    const { totalMano, totalRep, totalGan } = totales(srvs[ns]);
+    total = Math.round(totalMano + totalRep + totalGan + otros);
+  }
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -845,40 +996,76 @@ async function generarPDF(ns) {
 
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Detalle de servicios', margin, y);
-  y += 8;
 
-  doc.setFontSize(8);
-  doc.setFillColor(245, 244, 240);
-  doc.rect(margin, y - 4, usableWidth, 7, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.text('Servicio', margin + 2, y);
-  doc.text('Precio', margin + usableWidth, y, { align: 'right' });
-  y += 3;
+  if (esVenta) {
+    doc.text('Detalle de la venta', margin, y);
+    y += 8;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+    const compra = num(document.getElementById(ns + '-compra').value);
+    const repuesto = num(document.getElementById(ns + '-repuesto').value);
+    const precioVenta = num(document.getElementById(ns + '-precio-venta').value);
+    const inversion = compra + repuesto + otros;
+    const ganancia = precioVenta - inversion;
 
-  srvs[ns].forEach(s => {
-    if (y > pageHeight - 45) { doc.addPage(); y = 20; }
-    const gan = num(s.repuesto) * (num(s.pct) / 100);
-    const tot = num(s.mano) + num(s.repuesto) + gan;
-    doc.setTextColor(0, 0, 0);
-    doc.text(String(s.nombre).substring(0, 50), margin + 2, y);
+    const lineaVenta = (lbl, val) => {
+      if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(lbl, margin + 2, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(fmt(val), margin + usableWidth, y, { align: 'right' });
+      y += 7;
+    };
+
+    if (compra > 0) lineaVenta('Precio de compra', compra);
+    if (repuesto > 0) lineaVenta('Costo del repuesto', repuesto);
+    if (otros > 0) lineaVenta('Otros costos', otros);
+    lineaVenta('Inversion total', inversion);
+    y += 2;
+    lineaVenta('Precio de venta', precioVenta);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(fmt(tot), margin + usableWidth, y, { align: 'right' });
-    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(ganancia >= 0 ? 0 : 200, ganancia >= 0 ? 150 : 0, 0);
+    doc.text('Ganancia: ' + fmt(ganancia), margin + usableWidth, y, { align: 'right' });
     y += 7;
-  });
+  } else {
+    doc.text('Detalle de servicios', margin, y);
+    y += 8;
 
-  if (otros > 0) {
-    if (y > pageHeight - 45) { doc.addPage(); y = 20; }
-    doc.setTextColor(0, 0, 0);
-    doc.text('Otros costos', margin + 2, y);
+    doc.setFontSize(8);
+    doc.setFillColor(245, 244, 240);
+    doc.rect(margin, y - 4, usableWidth, 7, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.text(fmt(otros), margin + usableWidth, y, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    doc.text('Servicio', margin + 2, y);
+    doc.text('Precio', margin + usableWidth, y, { align: 'right' });
+    y += 3;
+
     doc.setFont('helvetica', 'normal');
-    y += 7;
+    doc.setFontSize(9);
+
+    srvs[ns].forEach(s => {
+      if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+      const gan = num(s.repuesto) * (num(s.pct) / 100);
+      const tot = num(s.mano) + num(s.repuesto) + gan;
+      doc.setTextColor(0, 0, 0);
+      doc.text(String(s.nombre).substring(0, 50), margin + 2, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(fmt(tot), margin + usableWidth, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 7;
+    });
+
+    if (otros > 0) {
+      if (y > pageHeight - 45) { doc.addPage(); y = 20; }
+      doc.setTextColor(0, 0, 0);
+      doc.text('Otros costos', margin + 2, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(fmt(otros), margin + usableWidth, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 7;
+    }
   }
 
   // Total
@@ -1024,31 +1211,33 @@ function importData(file) {
 // ── SINCRONIZACIÓN EN LA NUBE (Supabase) ─────────────────
 async function cloudGuardar(ns, entry) {
   try {
+    const payload = {
+      ns,
+      equipo: entry.equipo,
+      cliente: entry.cliente || null,
+      servicios: entry.servicios || [],
+      otros: num(entry.otros),
+      garantia: entry.garantia || null,
+      notas: entry.notas || null,
+      total: Math.round(num(entry.total)),
+    };
+    if (entry.venta) payload.venta = entry.venta;
     const r = await fetch(SUPA_URL + '/rest/v1/presupuestos', {
       method: 'POST',
       headers: { 'apikey': SUPA_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({
-        ns,
-        equipo: entry.equipo,
-        cliente: entry.cliente || null,
-        servicios: entry.servicios || [],
-        otros: num(entry.otros),
-        garantia: entry.garantia || null,
-        notas: entry.notas || null,
-        total: Math.round(num(entry.total)),
-      }),
+      body: JSON.stringify(payload),
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const row = await r.json();
     return Array.isArray(row) && row[0] ? row[0].id : null;
   } catch (e) {
-    console.warn('Sincronización en la nube falló (queda guardado local):', e);
+    console.warn('Sincronizacion en la nube fallo (queda guardado local):', e);
     return null;
   }
 }
 
 async function cloudActualizar(ns, entry) {
-  const res = await supaPatch(entry.cloud_id, {
+  const payload = {
     ns,
     equipo: entry.equipo,
     cliente: entry.cliente || null,
@@ -1057,7 +1246,9 @@ async function cloudActualizar(ns, entry) {
     garantia: entry.garantia || null,
     notas: entry.notas || null,
     total: Math.round(num(entry.total)),
-  });
+  };
+  if (entry.venta) payload.venta = entry.venta;
+  const res = await supaPatch(entry.cloud_id, payload);
   return res.ok && res.affected > 0;
 }
 
@@ -1089,6 +1280,7 @@ async function cloudCargar() {
           garantia: row.garantia || '',
           notas: row.notas || '',
           total: Math.round(num(row.total)),
+          venta: row.venta || null,
         });
       });
       h.sort((a, b) => b.id - a.id);
