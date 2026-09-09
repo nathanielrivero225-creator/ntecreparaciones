@@ -1,19 +1,28 @@
--- Ejecutar en Supabase SQL Editor
--- Fix 1: Agregar columna venta
-ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS venta jsonb DEFAULT NULL;
+-- Paso 1: Ver todos los check constraints actuales
+SELECT conname, pg_get_constraintdef(oid) as definition
+FROM pg_constraint
+WHERE conrelid = 'presupuestos'::regclass AND contype = 'c';
 
--- Fix 2: Reemplazar check constraint de ns para aceptar 'venta'
+-- Paso 2: Dropear TODOS los check constraints de la tabla
 DO $$
-DECLARE conname text;
+DECLARE r RECORD;
 BEGIN
-  SELECT c.conname INTO conname
-  FROM pg_constraint c
-  JOIN pg_class t ON c.conrelid = t.oid
-  WHERE t.relname = 'presupuestos' AND c.contype = 'c'
-    AND pg_get_constraintdef(c.oid) LIKE '%ns%';
-  IF conname IS NOT NULL THEN
-    EXECUTE 'ALTER TABLE presupuestos DROP CONSTRAINT ' || conname;
-  END IF;
+  FOR r IN SELECT conname FROM pg_constraint
+           WHERE conrelid = 'presupuestos'::regclass AND contype = 'c'
+  LOOP
+    EXECUTE 'ALTER TABLE presupuestos DROP CONSTRAINT ' || r.conname;
+    RAISE NOTICE 'Dropped constraint: %', r.conname;
+  END LOOP;
 END $$;
 
-ALTER TABLE presupuestos ADD CONSTRAINT presupuestos_ns_check CHECK (ns IN ('cel','pc','venta'));
+-- Paso 3: Recrear el constraint con 'venta'
+ALTER TABLE presupuestos
+  ADD CONSTRAINT presupuestos_ns_check CHECK (ns IN ('cel','pc','venta'));
+
+-- Paso 4: Agregar columna venta si no existe
+ALTER TABLE presupuestos ADD COLUMN IF NOT EXISTS venta jsonb DEFAULT NULL;
+
+-- Paso 5: Verificar que quedó bien
+SELECT conname, pg_get_constraintdef(oid) as definition
+FROM pg_constraint
+WHERE conrelid = 'presupuestos'::regclass AND contype = 'c';

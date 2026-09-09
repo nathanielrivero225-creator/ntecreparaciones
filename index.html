@@ -18,6 +18,9 @@
 .section-divider { max-width:var(--max-w,1040px); margin:32px auto 16px; display:flex; align-items:center; gap:12px; }
 .section-divider .line { flex:1; border-top:1px solid var(--border); }
 .section-divider .lbl { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text-hint); white-space:nowrap; display:flex; align-items:center; gap:6px; }
+.sec-intro { max-width:var(--max-w,1040px); margin:0 auto 16px; display:flex; align-items:center; gap:10px; background:var(--accent-bg); border:1px solid #d6e4fb; border-radius:10px; padding:10px 14px; font-size:13px; color:var(--accent-text); }
+.sec-intro svg { width:15px; height:15px; flex-shrink:0; stroke:var(--accent-text); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.sec-hint { display:inline; font-size:11px; color:var(--text-hint); font-weight:400; }
 
 label { display:block; font-size:12px; color:var(--text-muted); margin-bottom:4px; font-weight:500; }
 input[type=text],input[type=number],select,textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; color:var(--text); background:var(--surface-2); outline:none; transition:border-color .15s,box-shadow .15s; font-family:inherit; }
@@ -146,6 +149,17 @@ input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow
 
 /* TOAST */
 #sections .tarifas-section:last-of-type { margin-bottom:48px; }
+
+@media (max-width: 680px) {
+  .srv-fields { grid-template-columns: 1fr !important; }
+  .add-row { flex-direction: column; align-items: stretch; }
+  .btn-add { height: auto; }
+  .tarifas-head-wrap { display: block; }
+  .metric-grid { grid-template-columns: 1fr; }
+  .tarifas-table { min-width: 520px; }
+  .tab-content { overflow-x: auto; }
+  .sec-tab { padding: 10px 12px; font-size: 13px; }
+}
 </style>
 </head>
 <body>
@@ -191,12 +205,13 @@ function lsSet(key, val) {
 }
 
 // ── CONFIG POR SECCIÓN ───────────────────────────────────
-const NSS = ['cel', 'venta', 'pc'];
+const NSS = ['cel', 'venta', 'pc', 'compra'];
 const GARANTIAS = ['30 días','90 días','6 meses','1 año'];
 
 const CFG = {
   cel: {
     titulo: 'Celular',
+    desc: 'Presupuesto de reparacion — elegi los servicios, cargas el repuesto y ves tu ganancia neta.',
     tarifasTitulo: 'Celulares',
     tipoPDF: 'Celular',
     histTitulo: 'Historial',
@@ -242,6 +257,7 @@ const CFG = {
   },
   venta: {
     titulo: 'Venta',
+    desc: 'Compra-venta — cargas compra, repuesto y precio de venta para ver tu ganancia y ROI.',
     tipoPDF: 'Venta_Celular',
     histTitulo: 'Historial Ventas',
     icono: '<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
@@ -252,6 +268,7 @@ const CFG = {
   },
   pc: {
     titulo: 'PC / Laptop',
+    desc: 'Presupuesto de reparacion de PC / Laptops — servicios, repuestos y ganancia neta.',
     tarifasTitulo: 'PC &amp; Laptops',
     tipoPDF: 'PC_Laptop',
     histTitulo: 'Historial PC',
@@ -290,6 +307,15 @@ const CFG = {
     tabs: [['hw','Hardware'],['sw','Software'],['mant','Mantenimiento']],
     th: ['Servicio','Detalle'],
     refFooter: 'Referencias: WaltosTech UY, Tecnico.uy, MercadoLibre UY (2025–2026).',
+  },
+  compra: {
+    titulo: 'Compra',
+    desc: 'Registro de gastos — anota lo que se gasta en herramientas y materiales; el dashboard lo resta de tu ganancia.',
+    tipoPDF: 'Compra_Herramienta',
+    histTitulo: 'Historial Compras',
+    icono: '<svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    phNotas: 'Ej: comprado en Casabella / ferretería N, con garantia...',
+    compra: true,
   },
 };
 
@@ -416,6 +442,7 @@ function tarifasTpl(ns) {
 function ventaTpl(ns) {
   const C = CFG[ns];
   return `
+  ${introTpl(ns)}
   <div class="section-divider">
     <div class="line"></div>
     <div class="lbl">${C.icono}Venta de celulares</div>
@@ -461,19 +488,60 @@ function ventaTpl(ns) {
   </div>`;
 }
 
+function compraTpl(ns) {
+  const C = CFG[ns];
+  return `
+  ${introTpl(ns)}
+  <div class="layout">
+    <div class="card">
+      <div class="card-title">${C.icono}Registrar gasto</div>
+      <div class="field"><label for="${ns}-concepto">Herramienta o material</label><input type="text" id="${ns}-concepto" placeholder="Ej: estacion de soldado, kit de destornilladores, pasta termica..."></div>
+      <div class="field"><label for="${ns}-costo">Costo</label><div class="pfx"><span>$</span><input type="number" id="${ns}-costo" min="0" step="50" placeholder="0"></div></div>
+      <div class="field"><label for="${ns}-fecha">Fecha <span class="sec-hint">(vacia = se usa hoy)</span></label><input type="date" id="${ns}-fecha"></div>
+      <div class="field"><label for="${ns}-notas">Notas <span class="sec-hint">(opcional)</span></label><textarea id="${ns}-notas" rows="2" placeholder="${esc(C.phNotas)}"></textarea></div>
+      <div class="divider"></div>
+      <button type="button" class="btn btn-primary" data-act="save" data-ns="${ns}"><i data-lucide="save" style="width:15px;height:15px"></i> Guardar compra</button>
+      <button type="button" class="btn btn-secondary" data-act="clear-form" data-ns="${ns}">Limpiar formulario</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-title">${C.icono}Total gastado</div>
+        <div class="metric-grid">
+          <div class="metric"><div class="m-label">En herramientas y materiales</div><div class="m-value accent" id="${ns}-r-total">$0</div></div>
+          <div class="metric"><div class="m-label">Compras registradas</div><div class="m-value" id="${ns}-r-cant">0</div></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-hint);text-transform:uppercase;letter-spacing:.07em;font-weight:600;margin:14px 0 8px">Carga actual</div>
+        <div id="${ns}-r-detalle"></div>
+        <p class="backup-note" style="margin:10px 0 0">El dashboard resta este total de tu ganancia y muestra el diferencial que te queda.</p>
+      </div>
+      <div class="card">
+        <div class="card-title"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Ultimas compras</div>
+        <div class="history-list" id="${ns}-history"></div>
+        <button type="button" class="clear-history" data-act="clear-history" data-ns="${ns}">Borrar historial</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function introTpl(ns) {
+  const C = CFG[ns];
+  return `<div class="sec-intro">${C.icono}<span>${esc(C.desc)}</span></div>`;
+}
+
 function sectionTpl(ns) {
   const C = CFG[ns];
   if (C.venta) return ventaTpl(ns);
+  if (C.compra) return compraTpl(ns);
   const divider = C.divider ? `
   <div class="section-divider">
     <div class="line"></div>
     <div class="lbl">${C.icono}PC &amp; Laptops</div>
     <div class="line"></div>
   </div>` : '';
-  return divider + `
+  return introTpl(ns) + divider + `
   <div class="layout">
     <div class="card">
-      <div class="card-title">${C.icono}${C.titulo} — Datos</div>
+      <div class="card-title">${C.icono}Datos de la reparacion</div>
       <div class="field"><label for="${ns}-equipo">Equipo / descripción</label><input type="text" id="${ns}-equipo" placeholder="${esc(C.phEquipo)}"></div>
       <div class="field"><label for="${ns}-cliente">Cliente (opcional)</label><input type="text" id="${ns}-cliente" placeholder="Nombre del cliente"></div>
       <div class="divider"></div>
@@ -498,7 +566,7 @@ function sectionTpl(ns) {
 
     <div style="display:flex;flex-direction:column;gap:16px">
       <div class="card">
-        <div class="card-title">${C.icono}Presupuesto ${C.titulo}</div>
+        <div class="card-title">${C.icono}Total y ganancia</div>
         <div class="metric-grid">
           <div class="metric"><div class="m-label">Total al cliente</div><div class="m-value accent" id="${ns}-r-total">$0</div></div>
           <div class="metric"><div class="m-label">Tu ganancia neta</div><div class="m-value success" id="${ns}-r-neta">$0</div></div>
@@ -619,6 +687,7 @@ function renderSrvs(ns) {
 // ── CALCULAR ─────────────────────────────────────────────
 function calcular(ns) {
   if (CFG[ns] && CFG[ns].venta) return calcularVenta(ns);
+  if (CFG[ns] && CFG[ns].compra) return calcularCompra(ns);
   const lista = srvs[ns];
   const otros = num(document.getElementById(ns + '-otros').value);
   const garantia = document.getElementById(ns + '-garantia').value;
@@ -692,9 +761,30 @@ function calcularVenta(ns) {
   }
 }
 
+function calcularCompra(ns) {
+  const h = lsGet('ntec_' + ns + '_h', []);
+  const total = h.reduce((acc, x) => acc + num(x.costo), 0);
+  document.getElementById(ns + '-r-total').textContent = fmt(total);
+  document.getElementById(ns + '-r-cant').textContent = h.length;
+  const det = document.getElementById(ns + '-r-detalle');
+  const concepto = document.getElementById(ns + '-concepto').value.trim();
+  const costo = num(document.getElementById(ns + '-costo').value);
+  const fechaVal = document.getElementById(ns + '-fecha').value;
+  let html;
+  if (concepto || costo) {
+    html = '<div class="srv-result-block"><div class="srv-r-name">' + esc(concepto || '—') + '</div>' +
+      (fechaVal ? '<div class="srv-result-row"><span class="sl">Fecha</span><span class="sv">' + esc(fechaVal) + '</span></div>' : '') +
+      '<div class="srv-result-row"><span class="sl">Costo a registrar</span><span class="sv total">' + fmt(costo) + '</span></div></div>';
+  } else {
+    html = '<div class="empty-srv">Completa el formulario para ver la carga actual</div>';
+  }
+  if (detalleCache[ns] !== html) { det.innerHTML = html; detalleCache[ns] = html; }
+}
+
 // ── BORRADOR (autoguardado del formulario) ───────────────
 const draftTimers = {};
 function saveDraft(ns) {
+  if (CFG[ns] && CFG[ns].compra) return;
   clearTimeout(draftTimers[ns]);
   draftTimers[ns] = setTimeout(() => {
     const v = id => document.getElementById(id).value;
@@ -715,6 +805,7 @@ function saveDraft(ns) {
 }
 
 function loadDraft(ns) {
+  if (CFG[ns] && CFG[ns].compra) return false;
   const d = lsGet('ntec_' + ns + '_draft', null);
   if (!d || (!d.equipo && !d.cliente && !(d.srvs && d.srvs.length) && !d.compra)) return false;
   const v = id => document.getElementById(id);
@@ -742,7 +833,32 @@ function clearDraft(ns) {
 }
 
 // ── GUARDAR / LIMPIAR ────────────────────────────────────
+function guardarCompra(ns) {
+  const concepto = document.getElementById(ns + '-concepto').value.trim();
+  if (!concepto) { toast('Ingresá la herramienta o material.', true); return; }
+  const fechaInput = document.getElementById(ns + '-fecha').value;
+  const entry = {
+    id: editing && editing.ns === ns ? editing.id : Date.now(),
+    fecha: fechaInput || new Date().toLocaleDateString('es-UY'),
+    concepto,
+    costo: Math.round(num(document.getElementById(ns + '-costo').value)),
+    notas: document.getElementById(ns + '-notas').value.trim(),
+    total: Math.round(num(document.getElementById(ns + '-costo').value)),
+  };
+  const key = 'ntec_' + ns + '_h';
+  const h = lsGet(key, []);
+  const i = h.findIndex(x => x.id === entry.id);
+  if (i >= 0) h[i] = entry; else h.unshift(entry);
+  if (h.length > 30) h.length = 30;
+  if (!lsSet(key, h)) return;
+  renderHistory(ns);
+  terminarEdicion(ns);
+  limpiar(ns);
+  toast(i >= 0 ? 'Compra actualizada' : 'Compra guardada');
+}
+
 function guardar(ns) {
+  if (CFG[ns] && CFG[ns].compra) return guardarCompra(ns);
   const equipo = document.getElementById(ns + '-equipo').value.trim();
   if (!equipo) { toast('Ingresá una descripción del equipo.', true); return; }
   const esVenta = CFG[ns] && CFG[ns].venta;
@@ -825,6 +941,18 @@ function setBotonGuardar(ns, texto) {
 }
 
 function iniciarEdicion(ns, entry) {
+  if (CFG[ns] && CFG[ns].compra) {
+    document.getElementById(ns + '-concepto').value = entry.concepto || '';
+    document.getElementById(ns + '-costo').value = entry.costo || '';
+    document.getElementById(ns + '-notas').value = entry.notas || '';
+    const fe = document.getElementById(ns + '-fecha');
+    const f = String(entry.fecha || '');
+    if (fe) fe.value = /^\d{4}-\d{2}-\d{2}/.test(f) ? f : '';
+    calcularCompra(ns);
+    editing = { ns, id: entry.id != null ? entry.id : Date.now(), cloudId: null };
+    setBotonGuardar(ns, 'Guardar cambios');
+    return;
+  }
   document.getElementById(ns + '-equipo').value   = entry.equipo || '';
   document.getElementById(ns + '-cliente').value  = entry.cliente || '';
   document.getElementById(ns + '-otros').value    = entry.otros || '';
@@ -849,13 +977,22 @@ function iniciarEdicion(ns, entry) {
 function terminarEdicion(ns) {
   if (!editing || editing.ns !== ns) return;
   editing = null;
-  const esVenta = CFG[ns] && CFG[ns].venta;
-  setBotonGuardar(ns, esVenta ? 'Guardar venta' : 'Guardar presupuesto');
+  const C = CFG[ns];
+  const txt = C && C.venta ? 'Guardar venta' : C && C.compra ? 'Guardar compra' : 'Guardar presupuesto';
+  setBotonGuardar(ns, txt);
 }
 
 function limpiar(ns) {
   const estabaEditando = !!(editing && editing.ns === ns);
   terminarEdicion(ns);
+  if (CFG[ns] && CFG[ns].compra) {
+    ['concepto', 'costo', 'notas'].forEach(f => { const el = document.getElementById(ns + '-' + f); if (el) el.value = ''; });
+    const fe = document.getElementById(ns + '-fecha'); if (fe) fe.value = '';
+    calcularCompra(ns);
+    clearDraft(ns);
+    if (estabaEditando) toast('Edicion cancelada');
+    return;
+  }
   srvs[ns] = [];
   renderSrvs(ns);
   ['equipo','cliente','otros','notas'].forEach(f => { const el = document.getElementById(ns+'-'+f); if(el) el.value=''; });
@@ -873,7 +1010,15 @@ function limpiar(ns) {
 function renderHistory(ns) {
   const cont = document.getElementById(ns + '-history');
   const h = lsGet('ntec_' + ns + '_h', []);
-  if (!h.length) { cont.innerHTML = '<div class="empty-history">Todavia no hay presupuestos guardados</div>'; return; }
+  if (!h.length) { cont.innerHTML = '<div class="empty-history">' + (CFG[ns] && CFG[ns].compra ? 'Todavia no hay compras guardadas' : 'Todavia no hay presupuestos guardados') + '</div>'; return; }
+  if (CFG[ns] && CFG[ns].compra) {
+    cont.innerHTML = h.map(e => `
+    <div class="history-item" role="button" tabindex="0" data-act="load-entry" data-ns="${ns}" data-id="${e.id}">
+      <div class="hi-header"><span class="hi-name">${esc(e.concepto)}</span><span class="hi-total">${fmt(num(e.costo))}</span></div>
+      <div class="hi-date">${esc(e.fecha)}${e.notas ? ' · ' + esc(e.notas) : ''}</div>
+    </div>`).join('');
+    return;
+  }
   cont.innerHTML = h.map(e => {
     const esVenta = !!e.venta;
     let sub = esc(e.fecha) + (e.cliente ? ' · ' + esc(e.cliente) : '');
@@ -896,13 +1041,15 @@ function cargarEntrada(ns, id) {
   if (!e) return;
   iniciarEdicion(ns, e);
   toast('Editando entrada del historial — guardá para sobrescribirla');
-  document.getElementById(ns + '-equipo').scrollIntoView({ behavior:'smooth', block:'center' });
+  const target = CFG[ns] && CFG[ns].compra ? document.getElementById(ns + '-concepto') : document.getElementById(ns + '-equipo');
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function clearHistory(ns) {
   if (confirm('¿Borrar todo el historial?')) {
     localStorage.removeItem('ntec_' + ns + '_h');
     renderHistory(ns);
+    if (CFG[ns] && CFG[ns].compra) calcularCompra(ns);
     toast('Historial borrado');
   }
 }
@@ -1338,7 +1485,10 @@ function onFieldInput(e) {
     return;
   }
   const ns = NSS.find(n => t.id && t.id.startsWith(n + '-'));
-  if (ns) { calcular(ns); saveDraft(ns); }
+  if (ns) {
+    if (CFG[ns] && CFG[ns].compra) { calcularCompra(ns); return; }
+    calcular(ns); saveDraft(ns);
+  }
 }
 document.addEventListener('input', onFieldInput);
 
@@ -1366,8 +1516,36 @@ document.addEventListener('keydown', e => {
 
 // ── INIT ─────────────────────────────────────────────────
 function initIcons() { if (window.lucide) lucide.createIcons(); }
+function switchSec(ns) {
+  document.querySelectorAll('.sec-tab').forEach(b => {
+    const on = b.dataset.sec === ns;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  document.querySelectorAll('.sec-panel').forEach(p => { p.hidden = p.dataset.panel !== ns; });
+  try { localStorage.setItem('ntec_seccion', ns); } catch (e) {}
+}
+
+function renderSections() {
+  const tabDefs = [['cel', 'Celular'], ['venta', 'Venta'], ['compra', 'Compra'], ['pc', 'PC / Laptop']];
+  let inicial = 'cel';
+  try { const s = localStorage.getItem('ntec_seccion'); if (NSS.indexOf(s) >= 0) inicial = s; } catch (e) {}
+  document.getElementById('sections').innerHTML =
+    '<div class="sec-tabs" role="tablist" aria-label="Tipo de operación">' +
+    tabDefs.map(([ns, lbl]) =>
+      '<button type="button" role="tab" aria-selected="' + (ns === inicial) + '" class="sec-tab' + (ns === inicial ? ' active' : '') + '" data-sec="' + ns + '">' + lbl + '</button>'
+    ).join('') +
+    '</div>' +
+    NSS.map(ns =>
+      '<div class="sec-panel" data-panel="' + ns + '"' + (ns === inicial ? '' : ' hidden') + '>' + sectionTpl(ns) + '</div>'
+    ).join('');
+  document.querySelectorAll('[data-sec]').forEach(btn =>
+    btn.addEventListener('click', () => switchSec(btn.dataset.sec))
+  );
+}
+
 document.body.insertAdjacentHTML('afterbegin', renderNav('index'));
-document.getElementById('sections').innerHTML = NSS.map(sectionTpl).join('');
+renderSections();
 let restored = false;
 NSS.forEach(ns => {
   renderSrvs(ns);
@@ -1386,6 +1564,8 @@ function iniciarEdicionExterna() {
   try { req = JSON.parse(sessionStorage.getItem('ntec_edit') || 'null'); } catch (e) {}
   if (!req || !req.entry || NSS.indexOf(req.ns) < 0) return;
   try { sessionStorage.removeItem('ntec_edit'); } catch (e) {}
+  const sw = document.querySelector('.sec-tab[data-sec="' + req.ns + '"]');
+  if (sw) switchSec(req.ns);
   iniciarEdicion(req.ns, req.entry);
   toast('Editando presupuesto del dashboard — guardá para aplicar los cambios');
 }

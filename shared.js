@@ -1,6 +1,6 @@
 const SUPA_URL = 'https://vkfgweehpvyotqeplsie.supabase.co';
 const SUPA_KEY = 'sb_publishable_pprhcX5Pl9fWQkNIOaSDzQ_Ql7ySzzv';
-const SUPA_LIMIT = 500;
+const SUPA_LIMIT = 10000;
 
 const _SVG = {
   wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
@@ -36,8 +36,8 @@ function renderBackLink() {
 }
 
 const fmt = n => '$' + Math.round(n).toLocaleString('es-UY');
-const num = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? n : 0; };
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+const esc = s => String(s ?? '').replace(/[&<>"'`]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;' }[c]));
 
 let _toastTimer;
 function toast(msg, isErr) {

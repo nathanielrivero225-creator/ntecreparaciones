@@ -7,6 +7,7 @@
 <title>Dashboard — Ntec Reparaciones</title>
 <link rel="stylesheet" href="shared.css">
 <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:var(--shadow); max-width:var(--max-w,1040px); margin:0 auto 16px; }
 .card-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--text-hint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
@@ -21,16 +22,6 @@
 .m-value.success { color:var(--success); } .m-value.accent { color:var(--accent); }
 .m-value.warning { color:var(--warning); } .m-value.danger { color:var(--danger); }
 .m-sub { font-size:11px; color:var(--text-hint); margin-top:2px; }
-.chart-row { display:flex; align-items:flex-end; gap:14px; height:160px; padding-top:10px; }
-.chart-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
-.chart-bars { display:flex; gap:3px; align-items:flex-end; height:120px; width:100%; justify-content:center; }
-.bar { width:16px; border-radius:4px 4px 0 0; min-height:2px; position:relative; }
-.bar.ing { background:var(--accent); } .bar.gan { background:#4caf7d; }
-.bar:hover::after { content:attr(data-v); position:absolute; bottom:calc(100% + 2px); left:50%; transform:translateX(-50%); font-size:10px; background:var(--text); color:#fff; padding:2px 6px; border-radius:4px; white-space:nowrap; z-index:2; }
-.chart-lbl { font-size:10px; color:var(--text-hint); white-space:nowrap; }
-.leyenda { display:flex; gap:14px; margin-top:10px; font-size:11px; color:var(--text-muted); }
-.leyenda span::before { content:''; display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px; }
-.lg-ing::before { background:var(--accent); } .lg-gan::before { background:#4caf7d; }
 .cat-row { margin-bottom:12px; }
 .cat-head { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
 .cat-track { height:10px; background:var(--surface-2); border-radius:6px; overflow:hidden; }
@@ -51,32 +42,78 @@ tr:last-child td { border-bottom:none; }
 .btn-row.peligro:hover { background:#fde8e8; border-color:#f0b9b3; color:var(--danger); }
 .metric.separator { background:none; border:none; box-shadow:none; padding:6px 16px 2px; }
 .metric.separator .m-label { font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.08em; }
+/* ── CUENTA (resumen vertical) ────────────────────────── */
+#metrics { max-width:680px; margin:0 auto 16px; }
+#metrics .card { margin:0; }
+.cuenta-h { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-hint); border-bottom:1px solid var(--border); padding:10px 0 6px; margin-bottom:2px; }
+.cuenta-sec { margin-bottom:6px; }
+.cuenta-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; padding:5px 0; font-size:13px; }
+.cuenta-row .cr-l { color:var(--text-muted); }
+.cuenta-row .cr-l .cr-s { color:var(--text-hint); font-size:11px; }
+.cuenta-row .cr-v { font-weight:600; color:var(--text); text-align:right; }
+.cuenta-total { display:flex; justify-content:space-between; align-items:baseline; padding:6px 0 2px; margin-top:2px; border-top:1px solid var(--border); font-weight:700; font-size:14px; }
+.cuenta-total .cv { color:var(--accent); }
+.cuenta-resultado { margin-top:14px; background:var(--success-bg); border:1px solid #bfe3cd; border-radius:12px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.cuenta-resultado.neg { background:#fde8e8; border-color:#f0b9b3; }
+.cuenta-resultado .cr-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+.cuenta-resultado .cr-sub { font-size:11px; color:var(--text-hint); margin-top:2px; }
+.cuenta-resultado .cr-val { font-size:24px; font-weight:700; line-height:1.1; }
+.cr-val.ok { color:var(--success); }
+.cr-val.neg { color:var(--danger); }
+.cuenta-vacio { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; text-align:center; color:var(--text-hint); font-size:13px; box-shadow:var(--shadow); }
+.cargando { display:flex; align-items:center; gap:10px; color:var(--text-hint); font-size:13px; padding:14px 16px; }
+.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.banner-cta { max-width:var(--max-w,1040px); margin:0 auto 16px; border:1px solid var(--accent); background:var(--accent-bg); border-radius:12px; padding:16px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.banner-cta strong { display:block; font-size:14px; color:var(--accent-text); }
+.banner-cta span { font-size:12px; color:var(--text-muted); }
+.btn-cta { flex-shrink:0; background:var(--accent); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; text-decoration:none; font-family:inherit; cursor:pointer; }
+.btn-cta:hover { background:var(--accent-hover); }
+.banner-cta[hidden] { display:none; }
+.chart-wrap { position:relative; height:280px; }
+.chart-wrap canvas { max-height:280px; }
+.grid2 { max-width:var(--max-w,1040px); margin:0 auto 16px; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid2 .card { margin:0; }
+@media(max-width:640px){ .grid2{ grid-template-columns:1fr; } .chart-wrap{ height:220px; } }
 </style>
 </head>
 <body>
 
 <div class="filtros" id="filtros-bar">
-  <span class="chip active" data-filtro="mes">Este mes</span>
-  <span class="chip" data-filtro="30d">Ultimos 30 dias</span>
+  <span class="chip active" data-filtro="mes">Mes actual</span>
+  <span class="chip" data-filtro="30d">Mes anterior</span>
   <span class="chip" data-filtro="todo">Todo</span>
+  <select id="select-mes" class="chip" style="appearance:auto;padding-right:24px"></select>
 </div>
 
-<div class="grid-metrics" id="metrics"></div>
+<div class="banner-cta" id="banner-cta" hidden>
+  <div>
+    <strong>Todavia no hay presupuestos en este periodo.</strong>
+    <span>Empeza a cargar tus reparaciones en la calculadora y volve para ver tus numeros.</span>
+  </div>
+  <a class="btn-cta" href="index.html">+ Crear presupuesto</a>
+</div>
+
+<div id="metrics"></div>
 
 <div class="card">
   <div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Ingresos y ganancia por mes (ultimos 6 meses)</div>
-  <div class="chart-row" id="chart"></div>
-  <div class="leyenda"><span class="lg-ing">Ingresos totales</span><span class="lg-gan">Tu ganancia neta</span></div>
+  <div class="chart-wrap"><canvas id="chartBarras"></canvas></div>
 </div>
 
-<div style="max-width:var(--max-w,1040px);margin:0 auto 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px" class="grid2">
-  <div class="card" style="margin:0">
+<div class="card">
+  <div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Tendencia de ganancia mensual</div>
+  <div class="chart-wrap"><canvas id="chartLinea"></canvas></div>
+</div>
+
+<div class="grid2">
+  <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Celulares vs PC</div>
     <div id="cats"></div>
   </div>
-  <div class="card" style="margin:0">
+  <div class="card">
     <div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Donde va cada peso?</div>
-    <div id="desglose"></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="chartDona"></canvas></div>
   </div>
 </div>
 
@@ -91,26 +128,44 @@ tr:last-child td { border-bottom:none; }
   <p style="font-size:11px;color:var(--text-hint);margin-top:10px">Los montos son estimativos, calculados a partir de los presupuestos guardados (mano de obra + repuestos con su % de ganancia).</p>
 </div>
 
+<div class="card">
+  <div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Gastos en herramientas</div>
+  <div style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Fecha</th><th>Herramienta / material</th><th class="t-num">Costo</th></tr></thead>
+      <tbody id="tabla-compras"></tbody>
+      <tfoot><tr><td></td><td class="t-num" style="padding-top:10px;font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em">Total del periodo</td><td class="t-num" style="padding-top:10px" id="tabla-compras-total">$0</td></tr></tfoot>
+    </table>
+  </div>
+  <p style="font-size:11px;color:var(--text-hint);margin-top:10px">Diferencial = ganancia del periodo − gastos en herramientas (lo ves en las metricas de arriba).</p>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="shared.js"></script>
 <script>
 const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const MESES_LARGO = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 let DATOS = [];
 let filtroActual = 'mes';
 let fuenteNube = false;
+let cargando = true;
+
+let chartBarras = null;
+let chartLinea = null;
+let chartDona = null;
 
 function actualizarEstado() {
   const el = document.getElementById('estado-datos');
   if (el) el.textContent = DATOS.length + ' presupuesto(s) · ' + (fuenteNube ? 'nube' : 'solo local');
 }
 
-function huella(d) { return d.equipo + '|' + (d.cliente || '') + '|' + Math.round(num(d.total)) + '|' + diaTxt(d.ts); }
+function huella(d) { return d.ns + '|' + d.equipo + '|' + (d.cliente || '') + '|' + Math.round(num(d.total)) + '|' + diaTxt(d.ts); }
 
 async function cargarDatos() {
   const datos = [];
-  let fuenteNube = false;
+  fuenteNube = false;
   try {
     const r = await fetch(SUPA_URL + '/rest/v1/presupuestos?select=*&order=creado_en.desc&limit=' + SUPA_LIMIT, { headers: { 'apikey': SUPA_KEY } });
     if (r.ok) {
@@ -121,7 +176,7 @@ async function cargarDatos() {
         datos.push({ rid: x.id != null ? x.id : null, lid: null, ts, ns: x.ns === 'pc' ? 'pc' : x.ns === 'venta' ? 'venta' : 'cel', equipo: x.equipo || '', cliente: x.cliente || '', servicios: Array.isArray(x.servicios) ? x.servicios : [], otros: num(x.otros), total: num(x.total), garantia: x.garantia || '', notas: x.notas || '', venta: x.venta || null });
       });
     }
-  } catch (e) { console.warn('nube caída, uso solo local', e); }
+  } catch (e) { console.warn('nube caida, uso solo local', e); }
   const porHuella = new Map(datos.map(d => [huella(d), d]));
   ['cel', 'pc', 'venta'].forEach(ns => {
     try {
@@ -143,6 +198,29 @@ async function cargarDatos() {
 
 function diaTxt(d) { return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear(); }
 
+let COMPRAS = [];
+
+function cargarCompras() {
+  COMPRAS = [];
+  try {
+    const arr = JSON.parse(localStorage.getItem('ntec_compra_h') || '[]');
+    if (!Array.isArray(arr)) return;
+    arr.forEach(e => {
+      if (e.costo == null) return;
+      const f = String(e.fecha || '');
+      let ts;
+      if (/^\d{4}-\d{2}-\d{2}/.test(f)) ts = new Date(f + 'T00:00:00');
+      else {
+        const p = f.split('/').map(Number);
+        ts = p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(f);
+      }
+      if (isNaN(ts)) ts = new Date();
+      COMPRAS.push({ id: e.id, ts, concepto: e.concepto || '', costo: num(e.costo), notas: e.notas || '' });
+    });
+  } catch (err) {}
+  COMPRAS.sort((a, b) => b.ts - a.ts);
+}
+
 function desglosar(e) {
   if (e.venta) {
     const v = e.venta;
@@ -160,18 +238,53 @@ function desglosar(e) {
   return { ingreso: num(e.total), mano, materiales: rep, ganancia: mano + ganRep, otros: num(e.otros) };
 }
 
-function filtrar() {
+function fechaEnFiltro(ts) {
   const hoy = new Date();
-  if (filtroActual === 'mes') return DATOS.filter(d => d.ts.getMonth() === hoy.getMonth() && d.ts.getFullYear() === hoy.getFullYear());
-  if (filtroActual === '30d') { const lim = new Date(); lim.setDate(lim.getDate() - 30); return DATOS.filter(d => d.ts >= lim); }
-  return DATOS;
+  if (filtroActual === 'mes') return ts.getMonth() === hoy.getMonth() && ts.getFullYear() === hoy.getFullYear();
+  if (filtroActual === '30d') {
+    const ant = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    return ts >= ant && ts <= fin;
+  }
+  if (filtroActual === 'mes-especifico') {
+    const sel = document.getElementById('select-mes').value;
+    if (!sel) return true;
+    const [y, m] = sel.split('-').map(Number);
+    return ts.getMonth() === m && ts.getFullYear() === y;
+  }
+  return true;
+}
+
+function filtrar() {
+  return DATOS.filter(d => fechaEnFiltro(d.ts));
+}
+
+function poblarSelectMeses() {
+  const sel = document.getElementById('select-mes');
+  const set = new Set();
+  DATOS.forEach(d => set.add(d.ts.getFullYear() + '-' + String(d.ts.getMonth()).padStart(2, '0')));
+  COMPRAS.forEach(c => set.add(c.ts.getFullYear() + '-' + String(c.ts.getMonth()).padStart(2, '0')));
+  const arr = [...set].sort().reverse();
+  sel.innerHTML = '<option value="">Buscar por mes…</option>' + arr.map(v => {
+    const [y, m] = v.split('-').map(Number);
+    return '<option value="' + v + '">' + MESES_LARGO[m] + ' ' + y + '</option>';
+  }).join('');
 }
 
 function render() {
+  if (cargando) {
+    document.getElementById('banner-cta').hidden = true;
+    document.getElementById('metrics').innerHTML = '<div class="metric"' +
+      ' style="grid-column:1/-1"><div class="cargando"><div class="spinner"></div>Cargando datos…</div></div>';
+    document.getElementById('cats').innerHTML = '';
+    document.getElementById('tabla').innerHTML = '';
+    document.getElementById('tabla-compras').innerHTML = '';
+    return;
+  }
   const fil = filtrar();
   let ing = 0, gan = 0, mat = 0, mano = 0, otros = 0;
   let ingRep = 0, ganRep = 0, matRep = 0, manoRep = 0, otrosRep = 0;
-  let ingVen = 0, ganVen = 0;
+  let ingVen = 0, ganVen = 0, invVen = 0;
   const cats = { cel: { n: 0, ing: 0, gan: 0 }, pc: { n: 0, ing: 0, gan: 0 }, venta: { n: 0, ing: 0, gan: 0 } };
   fil.forEach(e => {
     const d = desglosar(e);
@@ -179,6 +292,7 @@ function render() {
     ing += d.ingreso; gan += d.ganancia; mat += d.materiales; mano += d.mano; otros += d.otros;
     if (esVenta) {
       ingVen += d.ingreso; ganVen += d.ganancia;
+      invVen += num(e.venta.compra) + num(e.venta.repuesto);
     } else {
       ingRep += d.ingreso; ganRep += d.ganancia; matRep += d.materiales; manoRep += d.mano; otrosRep += d.otros;
     }
@@ -186,89 +300,273 @@ function render() {
     c.n++; c.ing += d.ingreso; c.gan += d.ganancia;
   });
   const n = fil.length;
-  const margen = ing > 0 ? Math.round(gan / ing * 100) : 0;
   const margenRep = ingRep > 0 ? Math.round(ganRep / ingRep * 100) : 0;
   const margenVen = ingVen > 0 ? Math.round(ganVen / ingVen * 100) : 0;
   const nRep = fil.filter(e => !e.venta).length;
   const nVen = fil.filter(e => !!e.venta).length;
 
-  let html = '';
-  if (ingRep > 0 && ingVen > 0) {
-    html += met('Ingresos totales', fmt(ing), 'accent', n + ' registros');
-    html += met('Ganancia total', fmt(gan), 'success', margen + '% margen');
-    html += '<div class="metric separator"><div class="m-label">— Reparaciones —</div></div>';
-    html += met('Ganancia reparaciones', fmt(ganRep), 'success', margenRep + '% margen');
-    html += met('Materiales', fmt(matRep), '', nRep + ' reparaciones');
-    html += met('Mano de obra', fmt(manoRep));
-    html += '<div class="metric separator"><div class="m-label">— Ventas —</div></div>';
-    html += met('Ganancia ventas', fmt(ganVen), 'success', margenVen + '% margen');
-    html += met('Inversion ventas', fmt(ingVen - ganVen), '', nVen + ' ventas');
-  } else if (ingVen > 0) {
-    html += met('Ingresos por ventas', fmt(ingVen), 'accent', nVen + ' ventas');
-    html += met('Ganancia ventas', fmt(ganVen), 'success', margenVen + '% ROI');
-    html += met('Inversion total', fmt(ingVen - ganVen), '', 'compra + repuestos + otros');
+  const comprasPeriodo = COMPRAS.filter(c => fechaEnFiltro(c.ts));
+  const nCompras = comprasPeriodo.length;
+  const gastosH = comprasPeriodo.reduce((s, c) => s + num(c.costo), 0);
+  const totalGastos = matRep + invVen + otros + gastosH;
+  const resultado = ing - totalGastos;
+  const margen = ing > 0 ? Math.round(resultado / ing * 100) : 0;
+
+  const metricEl = document.getElementById('metrics');
+  if (n === 0 && nCompras === 0) {
+    metricEl.innerHTML = '<div class="cuenta-vacio">Todavia no hay presupuestos ni compras en este periodo.</div>';
   } else {
-    html += met('Ingresos totales', fmt(ing), 'accent');
-    html += met('Ganancia neta', fmt(gan), 'success', margen + '% margen');
-    html += met('Materiales / repuestos', fmt(mat), '', 'costo estimado');
-    html += met('Mano de obra', fmt(mano));
-    html += met('Otros costos', fmt(otros));
-    html += met(n === 1 ? 'Presupuesto' : 'Presupuestos', String(n), '', n ? 'promedio ' + fmt(ing / n) : '');
+    metricEl.innerHTML = cuentaHtml({
+      periodo: periodoLabel(), nRep, nVen, nCompras,
+      ingRep, margenRep, ingVen, margenVen, ing,
+      matRep, invVen, otros, gastosH, totalGastos,
+      resultado, margen,
+    });
   }
 
-  document.getElementById('metrics').innerHTML = html;
-
-  renderChart(fil);
+  renderChartBarras();
+  renderChartLinea();
   renderCats(cats, ing);
-  const desgloseTitle = document.querySelector('#desglose').closest('.card').querySelector('.card-title');
-  if (ingRep > 0 && ingVen > 0) {
-    renderDesgloseDetallado(ingRep, matRep, manoRep, otrosRep, ganRep, ingVen, ganVen);
-    desgloseTitle.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Reparaciones vs Ventas — donde va cada peso?';
-  } else {
-    renderDesglose(ing, mat, mano, otros, gan);
-    desgloseTitle.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Donde va cada peso?';
+  renderChartDona(ing, mat, mano, otros, gan);
+  const desgloseTitle = document.querySelector('#desglose-title');
+  if (desgloseTitle) {
+    if (ingRep > 0 && ingVen > 0) {
+      desgloseTitle.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Reparaciones vs Ventas — donde va cada peso?';
+    }
   }
   renderTabla(fil);
+  renderTablaCompras(comprasPeriodo);
+  const banner = document.getElementById('banner-cta');
+  if (banner) banner.hidden = fil.length > 0;
 }
 
 function met(label, valor, cls, sub) {
   return '<div class="metric"><div class="m-label">' + label + '</div><div class="m-value ' + (cls || '') + '">' + esc(valor) + '</div>' + (sub ? '<div class="m-sub">' + esc(sub) + '</div>' : '') + '</div>';
 }
 
-function renderChart(fil) {
+function periodoLabel() {
+  const hoy = new Date();
+  if (filtroActual === 'mes') return MESES_LARGO[hoy.getMonth()] + ' ' + hoy.getFullYear();
+  if (filtroActual === '30d') {
+    const ant = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    return MESES_LARGO[ant.getMonth()] + ' ' + ant.getFullYear();
+  }
+  if (filtroActual === 'mes-especifico') {
+    const sel = document.getElementById('select-mes').value;
+    if (sel) { const [y, mo] = sel.split('-').map(Number); return MESES_LARGO[mo] + ' ' + y; }
+  }
+  return 'Todo el historial';
+}
+
+function cuentaRow(l, s, v) {
+  return '<div class="cuenta-row"><span class="cr-l">' + l + (s ? ' <span class="cr-s">· ' + s + '</span>' : '') + '</span><span class="cr-v">' + fmt(v) + '</span></div>';
+}
+
+function cuentaHtml(m) {
+  let html = '<div class="card">';
+  html += '<div class="card-title"><svg viewBox="0 0 24 24" width="14" height="14"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Cuenta del periodo — ' + esc(m.periodo) + '</div>';
+  html += '<div class="cuenta-sec"><div class="cuenta-h">Ingresos</div>';
+  html += cuentaRow('Reparaciones (celular y PC)', m.nRep + ' presupuesto(s) · margen ' + m.margenRep + '%', m.ingRep);
+  html += cuentaRow('Venta de celulares', m.nVen + ' venta(s) · margen ' + m.margenVen + '%', m.ingVen);
+  html += '<div class="cuenta-total"><span>Total ingresos</span><span class="cv">' + fmt(m.ing) + '</span></div></div>';
+  html += '<div class="cuenta-sec"><div class="cuenta-h">Gastos</div>';
+  html += cuentaRow('Repuestos y materiales (reparaciones)', '', m.matRep);
+  html += cuentaRow('Compra + repuesto (ventas)', '', m.invVen);
+  html += cuentaRow('Otros costos', '', m.otros);
+  html += cuentaRow('Herramientas (compras)', m.nCompras + ' compra(s)', m.gastosH);
+  html += '<div class="cuenta-total"><span>Total gastos</span><span>' + fmt(m.totalGastos) + '</span></div></div>';
+  const resCls = m.resultado < 0 ? ' neg' : '';
+  const valCls = m.resultado < 0 ? 'neg' : 'ok';
+  html += '<div class="cuenta-resultado' + resCls + '"><div><div class="cr-label">Resultado — lo que te queda</div><div class="cr-sub">' + esc(m.periodo) + ' · margen ' + m.margen + '%</div></div><div class="cr-val ' + valCls + '">' + (m.resultado < 0 ? '−' : '') + fmt(Math.abs(m.resultado)) + '</div></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderChartBarras() {
   const hoy = new Date(), meses = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    meses.push({ k: d.getFullYear() + '-' + d.getMonth(), lbl: MESES[d.getMonth()], ing: 0, gan: 0, ingRep: 0, ganRep: 0, ingVen: 0, ganVen: 0 });
+    meses.push({ k: d.getFullYear() + '-' + d.getMonth(), lbl: MESES[d.getMonth()], lblLargo: MESES_LARGO[d.getMonth()] + ' ' + d.getFullYear(), ing: 0, gan: 0 });
   }
-  fil.forEach(e => {
+  DATOS.forEach(e => {
     const k = e.ts.getFullYear() + '-' + e.ts.getMonth();
     const m = meses.find(x => x.k === k);
     if (m) {
       const d = desglosar(e);
-      const esVenta = !!e.venta;
       m.ing += d.ingreso; m.gan += d.ganancia;
-      if (esVenta) { m.ingVen += d.ingreso; m.ganVen += d.ganancia; }
-      else { m.ingRep += d.ingreso; m.ganRep += d.ganancia; }
     }
   });
-  const max = Math.max(...meses.map(m => m.ing), 1);
-  const tieneVentas = meses.some(m => m.ingVen > 0);
-  document.getElementById('chart').innerHTML = meses.map(m => {
-    const hi = Math.max(Math.round(m.ing / max * 110), m.ing ? 3 : 2);
-    const hg = Math.max(Math.round(m.gan / max * 110), 2);
-    return '<div class="chart-col"><div class="chart-bars">' +
-      '<div class="bar ing" style="height:' + hi + 'px" data-v="' + esc(fmt(m.ing)) + '"></div>' +
-      '<div class="bar gan" style="height:' + hg + 'px" data-v="' + esc(fmt(m.gan)) + '"></div></div>' +
-      '<div class="chart-lbl">' + m.lbl + '</div></div>';
-  }).join('');
-  const leyenda = document.querySelector('.leyenda');
-  if (leyenda) {
-    leyenda.innerHTML = '<span class="lg-ing">Ingresos totales</span><span class="lg-gan">Tu ganancia neta</span>' +
-      (tieneVentas ? '<span style="font-size:10px;color:var(--text-hint);margin-left:auto">Rep: <strong style="color:var(--accent)">' +
-        fmt(meses.reduce((s, m) => s + m.ingRep, 0)) + '</strong> · Ventas: <strong style="color:#e65100">' +
-        fmt(meses.reduce((s, m) => s + m.ingVen, 0)) + '</strong></span>' : '');
+  const ctx = document.getElementById('chartBarras').getContext('2d');
+  if (chartBarras) chartBarras.destroy();
+  chartBarras = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: meses.map(m => m.lbl),
+      datasets: [
+        {
+          label: 'Ingresos totales',
+          data: meses.map(m => m.ing),
+          backgroundColor: 'rgba(37,99,235,0.75)',
+          borderColor: 'rgba(37,99,235,1)',
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Ganancia neta',
+          data: meses.map(m => m.gan),
+          backgroundColor: 'rgba(76,175,125,0.75)',
+          borderColor: 'rgba(76,175,125,1)',
+          borderWidth: 1,
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'rectRounded', padding: 16, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.92)',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function(items) { return meses[items[0].dataIndex].lblLargo; },
+            label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + fmt(ctx.parsed.y); },
+            afterBody: function(items) {
+              const m = meses[items[0].dataIndex];
+              if (m.ing > 0) return '  Margen: ' + Math.round(m.gan / m.ing * 100) + '%';
+              return '';
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          ticks: {
+            font: { size: 11 },
+            callback: function(v) { return fmt(v); }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderChartLinea() {
+  const hoy = new Date(), meses = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    meses.push({ k: d.getFullYear() + '-' + d.getMonth(), lbl: MESES[d.getMonth()], lblLargo: MESES_LARGO[d.getMonth()] + ' ' + d.getFullYear(), gan: 0 });
   }
+  DATOS.forEach(e => {
+    const k = e.ts.getFullYear() + '-' + e.ts.getMonth();
+    const m = meses.find(x => x.k === k);
+    if (m) {
+      const d = desglosar(e);
+      m.gan += d.ganancia;
+    }
+  });
+  const ctx = document.getElementById('chartLinea').getContext('2d');
+  if (chartLinea) chartLinea.destroy();
+  chartLinea = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: meses.map(m => m.lbl),
+      datasets: [{
+        label: 'Ganancia mensual',
+        data: meses.map(m => m.gan),
+        borderColor: '#4caf7d',
+        backgroundColor: 'rgba(76,175,125,0.12)',
+        borderWidth: 3,
+        pointBackgroundColor: '#4caf7d',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.92)',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function(items) { return meses[items[0].dataIndex].lblLargo; },
+            label: function(ctx) { return ' Ganancia: ' + fmt(ctx.parsed.y); }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.04)' },
+          ticks: { font: { size: 11 }, callback: function(v) { return fmt(v); } }
+        }
+      }
+    }
+  });
+}
+
+function renderChartDona(ing, mat, mano, otros, gan) {
+  const ctx = document.getElementById('chartDona').getContext('2d');
+  if (chartDona) chartDona.destroy();
+  if (!ing) {
+    chartDona = new Chart(ctx, { type: 'doughnut', data: { labels: ['Sin datos'], datasets: [{ data: [1], backgroundColor: ['#e5e7eb'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { enabled: false } } } });
+    return;
+  }
+  chartDona = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Materiales', 'Mano de obra', 'Otros costos', 'Tu ganancia'],
+      datasets: [{
+        data: [mat, mano, otros, gan],
+        backgroundColor: ['#e67e22', '#2563eb', '#95a5a6', '#4caf7d'],
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 10, font: { size: 10 } } },
+        tooltip: {
+          backgroundColor: 'rgba(15,23,42,0.92)',
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(ctx) {
+              const v = ctx.parsed;
+              const pct = Math.round(v / ing * 100);
+              return ' ' + ctx.label + ': ' + fmt(v) + ' (' + pct + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 function renderCats(cats, ingTotal) {
@@ -283,48 +581,11 @@ function renderCats(cats, ingTotal) {
   }).join('') || '<div class="vacio">Sin datos</div>';
 }
 
-function renderDesglose(ing, mat, mano, otros, gan) {
-  const totalBase = Math.max(ing, 1);
-  const fila = (lbl, v, color) => {
-    const pct = Math.round(v / totalBase * 100);
-    return '<div class="cat-row"><div class="cat-head"><span>' + lbl + '</span><strong>' + esc(fmt(v)) + ' · ' + pct + '%</strong></div>' +
-      '<div class="cat-track"><div class="cat-fill" style="width:' + Math.min(pct, 100) + '%;background:' + color + '"></div></div></div>';
-  };
-  document.getElementById('desglose').innerHTML = ing
-    ? fila('Materiales / repuestos', mat, '#e67e22') + fila('Mano de obra', mano, '#1a6fd4') + fila('Otros costos', otros, '#95a5a6') + fila('Tu ganancia', gan, '#4caf7d')
-    : '<div class="vacio">Sin datos en este periodo</div>';
-}
-
-function renderDesgloseDetallado(ingRep, matRep, manoRep, otrosRep, ganRep, ingVen, ganVen) {
-  const el = document.getElementById('desglose');
-  if (!ingRep && !ingVen) { el.innerHTML = '<div class="vacio">Sin datos en este periodo</div>'; return; }
-  const fila = (lbl, v, color, base) => {
-    const pct = base > 0 ? Math.round(v / base * 100) : 0;
-    return '<div class="cat-row"><div class="cat-head"><span>' + lbl + '</span><strong>' + esc(fmt(v)) + ' · ' + pct + '%</strong></div>' +
-      '<div class="cat-track"><div class="cat-fill" style="width:' + Math.min(pct, 100) + '%;background:' + color + '"></div></div></div>';
-  };
-  let html = '';
-  if (ingRep > 0) {
-    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.06em">Reparaciones</div>';
-    html += fila('Materiales / repuestos', matRep, '#e67e22', ingRep);
-    html += fila('Mano de obra', manoRep, '#1a6fd4', ingRep);
-    html += fila('Otros costos', otrosRep, '#95a5a6', ingRep);
-    html += fila('Tu ganancia', ganRep, '#4caf7d', ingRep);
-  }
-  if (ingVen > 0) {
-    html += '<div style="font-size:11px;font-weight:700;color:var(--text-muted);margin:12px 0 4px;text-transform:uppercase;letter-spacing:.06em">Ventas</div>';
-    const inversion = ingVen - ganVen;
-    html += fila('Inversion (compra + repuesto)', inversion, '#e67e22', ingVen);
-    html += fila('Tu ganancia', ganVen, '#4caf7d', ingVen);
-  }
-  el.innerHTML = html;
-}
-
 let ULTIMOS = [];
 
 function renderTabla(fil) {
   ULTIMOS = fil.slice(0, 12);
-  if (!ULTIMOS.length) { document.getElementById('tabla').innerHTML = '<tr><td colspan="7" class="vacio">Todavía no hay presupuestos en este período</td></tr>'; return; }
+  if (!ULTIMOS.length) { document.getElementById('tabla').innerHTML = '<tr><td colspan="7" class="vacio">Todavia no hay presupuestos en este periodo</td></tr>'; return; }
   document.getElementById('tabla').innerHTML = ULTIMOS.map((e, i) => {
     const d = desglosar(e);
     const esVenta = !!e.venta;
@@ -348,6 +609,21 @@ function renderTabla(fil) {
   }).join('');
 }
 
+function renderTablaCompras(lista) {
+  const cont = document.getElementById('tabla-compras');
+  const totEl = document.getElementById('tabla-compras-total');
+  const total = lista.reduce((s, c) => s + num(c.costo), 0);
+  if (totEl) totEl.textContent = fmt(total);
+  if (!lista.length) { cont.innerHTML = '<tr><td colspan="3" class="vacio">Todavia no hay compras registradas en este periodo</td></tr>'; return; }
+  cont.innerHTML = lista.slice(0, 12).map(c =>
+    '<tr>' +
+      '<td style="white-space:nowrap">' + diaTxt(c.ts) + '</td>' +
+      '<td>' + esc(c.concepto || '—') + (c.notas ? '<br><span style="font-size:11px;color:var(--text-hint)">' + esc(c.notas) + '</span>' : '') + '</td>' +
+      '<td class="t-num"><strong>' + esc(fmt(c.costo)) + '</strong></td>' +
+    '</tr>'
+  ).join('');
+}
+
 function editarPresupuesto(d) {
   let entry = null;
   try {
@@ -362,7 +638,7 @@ function editarPresupuesto(d) {
 }
 
 async function eliminarPresupuesto(d) {
-  if (!confirm('¿Eliminar el presupuesto de "' + (d.equipo || 'equipo') + '"?')) return;
+  if (!confirm('Eliminar el presupuesto de "' + (d.equipo || 'equipo') + '"?')) return;
   let res = { ok: false, affected: 0 };
   if (d.rid != null) {
     res = await supaEliminar({ id: d.rid });
@@ -374,7 +650,7 @@ async function eliminarPresupuesto(d) {
   DATOS = DATOS.filter(x => x !== d);
   actualizarEstado();
   render();
-  if (!res.ok) toast('Eliminado local — la nube no respondió', true);
+  if (!res.ok) toast('Eliminado local — la nube no respondio', true);
   else if (res.affected === 0) toast('No se pudo borrar en la nube — falta configurar permisos DELETE en Supabase', true);
   else toast('Presupuesto eliminado');
 }
@@ -389,7 +665,7 @@ function quitarCopiasLocales(d) {
       const p = String(e.fecha || '').split('/').map(Number);
       const ts = p.length === 3 ? new Date(p[2], p[1] - 1, p[0]) : new Date(e.fecha);
       if (isNaN(ts)) return true;
-      return huella({ ts, equipo: e.equipo || '', cliente: e.cliente || '', total: e.total }) !== huella(d);
+      return huella({ ns: d.ns, ts, equipo: e.equipo || '', cliente: e.cliente || '', total: e.total }) !== huella(d);
     });
     if (filtrado.length !== h.length) localStorage.setItem(key, JSON.stringify(filtrado));
   } catch (err) {}
@@ -407,20 +683,37 @@ document.getElementById('tabla').addEventListener('click', e => {
 document.querySelectorAll('[data-filtro]').forEach(b => b.addEventListener('click', () => {
   filtroActual = b.dataset.filtro;
   document.querySelectorAll('[data-filtro]').forEach(x => x.className = x.dataset.filtro === filtroActual ? 'chip active' : 'chip');
+  document.getElementById('select-mes').value = '';
   render();
 }));
 
+document.getElementById('select-mes').addEventListener('change', function() {
+  if (this.value) {
+    filtroActual = 'mes-especifico';
+    document.querySelectorAll('[data-filtro]').forEach(x => x.className = 'chip');
+  } else {
+    filtroActual = 'mes';
+    document.querySelector('[data-filtro="mes"]').className = 'chip active';
+  }
+  render();
+});
+
 (async () => {
   document.body.insertAdjacentHTML('afterbegin', renderNav('dashboard'));
+  cargarCompras();
   try {
     const r = await cargarDatos();
     DATOS = r.datos;
     fuenteNube = r.fuenteNube;
+    cargando = false;
     actualizarEstado();
+    poblarSelectMeses();
     render();
     if (!DATOS.length) toast('Guarda tu primer presupuesto en la calculadora para verlo aca');
   } catch (e) {
     console.error(e);
+    cargando = false;
+    render();
     toast('No se pudieron cargar los datos', true);
   }
 })();
